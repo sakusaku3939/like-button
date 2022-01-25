@@ -38,6 +38,6 @@ export default {
   top: 50%;
   left: 50%;
   transform: translateY(-50%) translateX(-50%);
-  width: 50%;
+  width: 60%;
 }
 </style>
