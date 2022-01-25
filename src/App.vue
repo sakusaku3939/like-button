@@ -1,23 +1,30 @@
 <template>
   <div id="app">
-    <div id="lottie" ref="lottie"></div>
+    <div id="lottie" @click="animation"></div>
   </div>
 </template>
 
 <script>
 import lottie from 'lottie-web';
 
+let animation;
+
 export default {
   name: 'App',
   mounted() {
-    lottie.loadAnimation({
+    animation = lottie.loadAnimation({
       container: document.querySelector('#lottie'),
       renderer: 'svg',
       loop: false,
-      autoplay: true,
+      autoplay: false,
       path: 'https://assets8.lottiefiles.com/packages/lf20_9wcp0umd.json'
     });
   },
+  methods: {
+    animation() {
+      animation.playSegments([4, 60], true);
+    }
+  }
 }
 </script>
 
