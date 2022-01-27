@@ -1,8 +1,8 @@
 <template>
   <div id="app">
     <div class="like-button">
-      <div class="button"></div>
-      <div id="lottie" @click="animation"></div>
+      <div class="button" @click="animation"></div>
+      <div id="lottie"></div>
     </div>
     <div class="title">
       <h1>発表に「いいね」を送る</h1>
@@ -77,10 +77,11 @@ export default {
 
 #lottie {
   position: absolute;
+  width: 100%;
   top: 50%;
   left: 50%;
   transform: translateY(-50%) translateX(-50%);
-  width: 100%;
+  pointer-events: none;
 }
 
 @media screen and (max-width: 480px) {
