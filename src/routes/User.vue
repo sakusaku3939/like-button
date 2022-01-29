@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <div class="like-button">
-      <div class="button" @click="animation"></div>
+      <div class="button" @click="click_like_button"></div>
       <div id="lottie"></div>
     </div>
     <div class="title">
@@ -13,8 +13,14 @@
 
 <script>
 import lottie from "lottie-web";
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, set, increment } from "firebase/database";
+import config from "../config/firebase-config.js"
+
+initializeApp(config);
 
 let animation;
+const db = getDatabase();
 
 export default {
   name: "Screen",
@@ -28,8 +34,9 @@ export default {
     });
   },
   methods: {
-    animation() {
+    click_like_button() {
       animation.playSegments([4, 60], true);
+      set(ref(db, 'like_count'), {count: increment(1)});
     }
   }
 }
