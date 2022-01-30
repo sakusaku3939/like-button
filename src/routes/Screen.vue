@@ -1,13 +1,24 @@
 <template>
   <div id="app">
-    <div id="lottie" @click="animation"></div>
+    <div id="lottie"></div>
   </div>
 </template>
 
 <script>
 import lottie from "lottie-web";
+import {getDatabase, ref, onValue} from "firebase/database";
 
 let animation;
+let isInitialLoad = true;
+const db = getDatabase();
+
+onValue(ref(db, 'like_count/count'), (snapshot) => {
+  const count = snapshot.val();
+  if (count !== 0 && !isInitialLoad) {
+    animation.playSegments([4, 60], true);
+  }
+  isInitialLoad = false;
+});
 
 export default {
   name: "Screen",
@@ -19,11 +30,6 @@ export default {
       autoplay: false,
       path: 'https://assets8.lottiefiles.com/packages/lf20_9wcp0umd.json'
     });
-  },
-  methods: {
-    animation() {
-      animation.playSegments([4, 60], true);
-    }
   }
 }
 </script>
