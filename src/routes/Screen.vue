@@ -36,7 +36,9 @@ export default {
 
 <style scoped>
 #app {
+  position: relative;
   overflow: hidden;
+  height: 95vh;
 }
 
 #lottie {
