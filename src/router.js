@@ -12,17 +12,17 @@ export default new Router({
     routes: [
         {
             path: '/',
-            name: 'user',
+            name: 'User',
             component: User
         },
         {
             path: '/screen',
-            name: 'screen',
+            name: 'Screen',
             component: Screen
         },
         {
             path: '/admin',
-            name: 'admin',
+            name: 'Admin',
             component: Admin
         }
     ]

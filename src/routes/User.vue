@@ -23,7 +23,7 @@ let animation;
 const db = getDatabase();
 
 export default {
-  name: "Screen",
+  name: "User",
   mounted() {
     animation = lottie.loadAnimation({
       container: document.querySelector('#lottie'),
