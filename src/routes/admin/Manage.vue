@@ -26,9 +26,19 @@
             {{ message }}
           </li>
         </ul>
-        <div class="save-button-group">
-          <input class="save" type="submit" value="保存">
+        <div class="form-button-group">
           <button class="cancel" type="button" @click="hideAddModal">キャンセル</button>
+          <input class="ok" type="submit" value="保存">
+        </div>
+      </form>
+    </modal>
+
+    <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
+      <form class="modal" @submit="deletePresenter" onsubmit="return false">
+        <p v-if="this.list[deleteId]">{{ this.list[deleteId].title }} を削除しますか？この操作は元に戻せません。</p>
+        <div class="form-button-group">
+          <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
+          <input class="ok" type="submit" value="削除">
         </div>
       </form>
     </modal>
@@ -63,10 +73,11 @@ export default {
   data() {
     return {
       list: [
-        {title: "presenter1", id: 0},
-        {title: "presenter2", id: 1},
-        {title: "presenter3", id: 2}
+        {id: 0, title: "presenter1"},
+        {id: 1, title: "presenter2"},
+        {id: 2, title: "presenter3"}
       ],
+      deleteId: 0,
       dragging: false,
       inputTitle: "",
       url: "",
@@ -74,8 +85,9 @@ export default {
     };
   },
   methods: {
-    removeAt(idx) {
-      this.list.splice(idx, 1);
+    removeAt(id) {
+      this.deleteId = id;
+      this.$modal.show('delete-presenter-modal');
     },
     uploadFile() {
       const file = this.$refs.preview.files[0];
@@ -114,9 +126,16 @@ export default {
     },
     savePresenter() {
       id++;
-      this.list.push({title: this.inputTitle, id});
+      this.list.push({id, title: this.inputTitle});
       this.hideAddModal();
     },
+    deletePresenter() {
+      this.list.splice(this.deleteId, 1);
+      this.hideDeleteModal();
+    },
+    hideDeleteModal() {
+      this.$modal.hide('delete-presenter-modal');
+    }
   }
 };
 </script>
@@ -150,12 +169,14 @@ h1 {
 i.handle {
   color: #616161;
   font-size: 20px;
+  padding: 16px;
 }
 
 i.remove {
   color: #616161;
   font-size: 20px;
   margin-left: auto;
+  padding: 8px;
 }
 
 .image {
@@ -225,7 +246,7 @@ i.add:hover {
   padding: 0;
 }
 
-.save-button-group {
+.form-button-group {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -233,27 +254,28 @@ i.add:hover {
   margin-left: auto;
 }
 
-.save {
+.ok {
   background-color: #333333;
   color: #ffffff;
+  margin-right: 4px;
   padding: 4px 32px;
   border: none;
   outline: none;
   appearance: none;
 }
 
-.save:hover {
+.ok:hover {
   opacity: 0.9;
 }
 
 .cancel {
-  margin-left: 12px;
   font-size: 14px;
+  margin-right: 16px;
+  padding: 0;
   background-color: transparent;
   border: none;
   cursor: pointer;
   outline: none;
-  padding: 0;
   appearance: none;
 }
 
@@ -269,6 +291,12 @@ i.add:hover {
   .image {
     width: 80px;
     height: 45px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .list-group {
+    margin: 80px 16px 0;
   }
 }
 </style>
