@@ -1,5 +1,5 @@
 <template>
-  <div class="app">
+  <div id="app">
     <h1>発表者の追加・編集</h1>
 
     <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions">
