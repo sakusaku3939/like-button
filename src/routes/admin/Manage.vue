@@ -32,6 +32,7 @@
         </div>
       </form>
     </modal>
+    <div class="ghost"></div> <!-- Ignore unused warning -->
   </div>
 </template>
 
@@ -123,11 +124,11 @@ export default {
 <style scoped>
 h1 {
   text-align: center;
-  margin-top: 40px;
+  margin-top: 64px;
 }
 
 .list-group {
-  margin: 0 10%;
+  margin: 80px 10% 0;
 }
 
 .list-group li {
@@ -173,7 +174,7 @@ i.add {
   width: 100%;
   font-size: 32px;
   text-align: center;
-  margin-top: 24px;
+  margin-top: 16px;
 }
 
 i.add:hover {
