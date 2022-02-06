@@ -3,11 +3,11 @@
     <h1>発表者の追加・編集</h1>
 
     <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions">
-      <li v-for="(element, idx) in list" :key="element.text">
+      <li v-for="(element, id) in list" :key="element.title">
         <i class="fas fa-bars handle"></i>
         <div class="image"></div>
-        <span class="text">{{ element.text }} </span>
-        <i class="fas fa-times remove" @click="removeAt(idx)"></i>
+        <span class="title">{{ element.title }} </span>
+        <i class="fas fa-times remove" @click="removeAt(id)"></i>
       </li>
       <i class="far fa-plus-square add" @click="showAddModal"></i>
     </draggable>
@@ -15,7 +15,7 @@
     <modal name="add-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="savePresenter" onsubmit="return false">
         <h2>発表者を追加</h2>
-        <input class="title" type="text" placeholder="発表タイトル" v-model="inputTitle" required>
+        <input class="input-title" type="text" placeholder="発表タイトル" v-model="inputTitle" required>
         <input type="file" ref="preview" @change="uploadFile" accept="image/jpeg, image/png">
         <div class="preview" v-if="url">
           <div class="delete-button" @click="deletePreview"><i class="fas fa-times"></i></div>
@@ -63,9 +63,9 @@ export default {
   data() {
     return {
       list: [
-        {text: "presenter1", id: 0},
-        {text: "presenter2", id: 1},
-        {text: "presenter3", id: 2}
+        {title: "presenter1", id: 0},
+        {title: "presenter2", id: 1},
+        {title: "presenter3", id: 2}
       ],
       dragging: false,
       inputTitle: "",
@@ -114,7 +114,7 @@ export default {
     },
     savePresenter() {
       id++;
-      this.list.push({text: this.inputTitle, id});
+      this.list.push({title: this.inputTitle, id});
       this.hideAddModal();
     },
   }
@@ -165,7 +165,7 @@ i.remove {
   margin: 0 24px;
 }
 
-.text {
+.title {
   font-size: 16px;
 }
 
@@ -192,7 +192,7 @@ i.add:hover {
   margin-bottom: 24px;
 }
 
-.title {
+.input-title {
   width: calc(100% - 20px);
   max-width: 400px;
   padding: 8px;
