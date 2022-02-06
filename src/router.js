@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import User from './routes/User.vue'
 import Screen from './routes/Screen.vue'
 import Admin from "./routes/Admin";
+import Manage from "./routes/admin/Manage";
 
 Vue.use(Router)
 
@@ -12,18 +13,23 @@ export default new Router({
     routes: [
         {
             path: '/',
-            name: 'User',
+            text: 'User',
             component: User
         },
         {
             path: '/screen',
-            name: 'Screen',
+            text: 'Screen',
             component: Screen
         },
         {
             path: '/admin',
-            name: 'Admin',
+            text: 'Admin',
             component: Admin
+        },
+        {
+            path: '/admin/manage',
+            text: 'Manage',
+            component: Manage
         }
     ]
 })
