@@ -21,7 +21,6 @@ onValue(ref(db, 'like_count/count'), (snapshot) => {
 });
 
 export default {
-  name: "Screen",
   mounted() {
     animation = lottie.loadAnimation({
       container: document.querySelector('#lottie'),

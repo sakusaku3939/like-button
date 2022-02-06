@@ -55,7 +55,6 @@ Vue.use(VModal, {componentName: 'modal'})
 let id = 3;
 
 export default {
-  name: "Manage",
   order: 5,
   components: {
     draggable,
