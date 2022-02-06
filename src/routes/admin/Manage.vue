@@ -129,13 +129,14 @@ h1 {
 
 .list-group {
   margin: 80px 10% 0;
+  padding: 0;
 }
 
 .list-group li {
   display: flex;
   align-items: center;
   list-style: none;
-  padding: 24px;
+  padding: 24px 0;
 }
 
 .list-group li + li {
@@ -158,7 +159,6 @@ i.remove {
 }
 
 .image {
-  display: inline-block;
   width: 160px;
   height: 90px;
   border: 1px solid rgba(0, 0, 0, 0.3);
@@ -259,5 +259,16 @@ i.add:hover {
 
 .cancel:hover {
   opacity: 0.8;
+}
+
+@media screen and (max-width: 1000px) {
+  .list-group {
+    margin: 80px 56px 0;
+  }
+
+  .image {
+    width: 80px;
+    height: 45px;
+  }
 }
 </style>
