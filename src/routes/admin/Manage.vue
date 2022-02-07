@@ -141,9 +141,12 @@ export default {
 </script>
 
 <style scoped>
+#app {
+  margin: 64px 0;
+}
+
 h1 {
   text-align: center;
-  margin-top: 64px;
 }
 
 .list-group {
