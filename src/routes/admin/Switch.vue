@@ -66,6 +66,8 @@ export default {
 </script>
 
 <style scoped>
+@import "../../common/modal.css";
+
 #app {
   margin: 64px 0;
 }
@@ -135,53 +137,6 @@ i.play {
   font-size: 16px;
 }
 
-.modal {
-  display: flex;
-  flex-direction: column;
-  margin: 32px;
-}
-
-.modal h2 {
-  margin-top: 8px;
-  margin-bottom: 24px;
-}
-
-.form-button-group {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-top: 24px;
-  margin-left: auto;
-}
-
-.ok {
-  background-color: #333333;
-  color: #ffffff;
-  margin-right: 4px;
-  padding: 4px 32px;
-  border: none;
-  outline: none;
-  appearance: none;
-}
-
-.ok:hover {
-  opacity: 0.9;
-}
-
-.cancel {
-  font-size: 14px;
-  margin-right: 16px;
-  padding: 0;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-}
-
-.cancel:hover {
-  opacity: 0.8;
-}
 
 @media screen and (max-width: 1000px) {
   .list-group {
