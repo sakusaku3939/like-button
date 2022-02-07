@@ -16,6 +16,7 @@
       <form class="modal" @submit="savePresenter" onsubmit="return false">
         <h2>発表者を追加</h2>
         <input class="input-title" type="text" placeholder="発表タイトル" v-model="inputTitle" required>
+        <div style="margin: 8px 0">サムネイル画像</div>
         <input type="file" ref="preview" @change="uploadFile" accept="image/jpeg, image/png">
         <div class="preview" v-if="url">
           <div class="delete-button" @click="deletePreview"><i class="fas fa-times"></i></div>
