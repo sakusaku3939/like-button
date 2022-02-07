@@ -3,7 +3,7 @@
     <h1>発表者を切り替える</h1>
 
     <ul class="list-group">
-      <li v-for="(element) in list" :key="element.title">
+      <li v-for="(element) in list" :key="element.id" @click="changeAt(element.id)">
         <i class="fas fa-play play" v-if="element.id === current.id"></i>
         <div class="play-dummy" v-else></div>
         <div class="image"></div>
@@ -15,13 +15,22 @@
         </div>
       </li>
     </ul>
+
+    <h2>現在の発表者 {{ current.title }}</h2>
+
+    <modal name="change-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
+      <form class="modal" @submit="changePresenter" onsubmit="return false">
+        <p>発表者を {{ this.list[changeId].title }} に切り替えますか？</p>
+        <div class="form-button-group">
+          <button class="cancel" type="button" @click="hideChangeModal">キャンセル</button>
+          <input class="ok" type="submit" value="切り替える">
+        </div>
+      </form>
+    </modal>
   </div>
 </template>
 
 <script>
-
-let current = {id: 0, heartCounter: 30};
-
 export default {
   data() {
     return {
@@ -30,16 +39,44 @@ export default {
         {id: 1, title: "presenter2", heartCounter: 0},
         {id: 2, title: "presenter3", heartCounter: 0}
       ],
-      current,
+      current: {id: 0, title: "presenter1", heartCounter: 30},
+      changeId: 0,
     };
   },
+  methods: {
+    changeAt(id) {
+      this.changeId = id;
+      this.$modal.show('change-presenter-modal');
+    },
+    changePresenter() {
+      this.list[this.current.id].heartCounter = this.current.heartCounter;
+
+      let list = this.list[this.changeId];
+      this.current.id = list.id;
+      this.current.title = list.title;
+      this.current.heartCounter = list.heartCounter;
+
+      this.hideChangeModal();
+    },
+    hideChangeModal() {
+      this.$modal.hide('change-presenter-modal');
+    },
+  }
 }
 </script>
 
 <style scoped>
+#app {
+  margin: 64px 0;
+}
+
 h1 {
   text-align: center;
-  margin-top: 64px;
+}
+
+h2 {
+  text-align: center;
+  margin-top: 96px;
 }
 
 .list-group {
@@ -96,6 +133,54 @@ i.play {
 
 .title {
   font-size: 16px;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  margin: 32px;
+}
+
+.modal h2 {
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.form-button-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 24px;
+  margin-left: auto;
+}
+
+.ok {
+  background-color: #333333;
+  color: #ffffff;
+  margin-right: 4px;
+  padding: 4px 32px;
+  border: none;
+  outline: none;
+  appearance: none;
+}
+
+.ok:hover {
+  opacity: 0.9;
+}
+
+.cancel {
+  font-size: 14px;
+  margin-right: 16px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+}
+
+.cancel:hover {
+  opacity: 0.8;
 }
 
 @media screen and (max-width: 1000px) {
