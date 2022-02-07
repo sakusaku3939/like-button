@@ -16,7 +16,7 @@
       </li>
     </ul>
 
-    <h2>現在の発表者 {{ current.title }}</h2>
+    <h2>現在の発表者: {{ current.title }}</h2>
 
     <modal name="change-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="changePresenter" onsubmit="return false">
@@ -76,7 +76,7 @@ h1 {
 
 h2 {
   text-align: center;
-  margin-top: 96px;
+  margin-top: 80px;
 }
 
 .list-group {
