@@ -3,7 +3,7 @@
     <h1>発表者の追加・編集</h1>
 
     <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions">
-      <li v-for="(element, id) in list" :key="element.title">
+      <li v-for="(element, id) in list" :key="element.id">
         <i class="fas fa-bars handle"></i>
         <div class="image"></div>
         <span class="title">{{ element.title }} </span>
