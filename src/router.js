@@ -5,6 +5,7 @@ import Screen from './routes/Screen.vue'
 import Admin from "./routes/Admin";
 import Manage from "./routes/admin/Manage";
 import Switch from "./routes/admin/Switch";
+import Comment from "./routes/admin/Comment";
 
 Vue.use(Router)
 
@@ -31,6 +32,10 @@ export default new Router({
         {
             path: '/admin/switch',
             component: Switch
+        },
+        {
+            path: '/admin/comment',
+            component: Comment
         },
     ]
 })
