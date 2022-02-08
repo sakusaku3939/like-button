@@ -21,7 +21,7 @@
 
     <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="deleteComment" onsubmit="return false">
-        <p v-if="this.findIndex(deleteId) !== -1">{{ this.findIndex(deleteId).comment }} を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="this.findIndex(deleteId) !== -1">{{ list[this.findIndex(deleteId)].comment }} を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
@@ -49,7 +49,6 @@ export default {
     },
     deleteAt(id) {
       this.deleteId = id;
-      alert(this.deleteId)
       this.$modal.show('delete-presenter-modal');
     },
     deleteComment() {

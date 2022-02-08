@@ -3,11 +3,11 @@
     <h1>発表者の追加・編集</h1>
 
     <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions">
-      <li v-for="(element, id) in list" :key="element.id">
+      <li v-for="(element) in list" :key="element.id">
         <i class="fas fa-bars handle"></i>
         <div class="image"></div>
         <span class="title">{{ element.title }} </span>
-        <i class="fas fa-times remove" @click="deleteAt(id)"></i>
+        <i class="fas fa-times remove" @click="deleteAt(element.id)"></i>
       </li>
       <i class="far fa-plus-square add" @click="showAddModal"></i>
     </draggable>
@@ -36,7 +36,7 @@
 
     <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="deletePresenter" onsubmit="return false">
-        <p v-if="this.list[deleteId]">{{ this.list[deleteId].title }} を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="this.findIndex(deleteId) !== -1">{{ list[this.findIndex(deleteId)].title }} を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
@@ -130,12 +130,18 @@ export default {
       this.hideAddModal();
     },
     deletePresenter() {
-      this.list.splice(this.deleteId, 1);
+      let index = this.findIndex(this.deleteId);
+      if (index !== -1) {
+        this.list.splice(index, 1);
+      }
       this.hideDeleteModal();
     },
     hideDeleteModal() {
       this.$modal.hide('delete-presenter-modal');
-    }
+    },
+    findIndex(argId) {
+      return this.list.findIndex(({id}) => id === argId);
+    },
   }
 };
 </script>
