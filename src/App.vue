@@ -13,6 +13,8 @@
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;900&display=swap');
+@import "./common/modal.css";
+
 #app {
   font-family: 'Noto Sans JP', sans-serif;
 }

@@ -141,8 +141,6 @@ export default {
 </script>
 
 <style scoped>
-@import "../../common/modal.css";
-
 #app {
   margin: 64px 0;
 }
