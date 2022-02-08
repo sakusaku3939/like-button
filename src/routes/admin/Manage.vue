@@ -7,7 +7,7 @@
         <i class="fas fa-bars handle"></i>
         <div class="image"></div>
         <span class="title">{{ element.title }} </span>
-        <i class="fas fa-times remove" @click="removeAt(id)"></i>
+        <i class="fas fa-times remove" @click="deleteAt(id)"></i>
       </li>
       <i class="far fa-plus-square add" @click="showAddModal"></i>
     </draggable>
@@ -19,7 +19,7 @@
         <div style="margin: 8px 0">サムネイル画像</div>
         <input type="file" ref="preview" @change="uploadFile" accept="image/jpeg, image/png">
         <div class="preview" v-if="url">
-          <div class="delete-button" @click="deletePreview"><i class="fas fa-times"></i></div>
+          <div class="delete-button" @click="removePreview"><i class="fas fa-times"></i></div>
           <img :src="url" alt="">
         </div>
         <ul v-if="fileErrorMessages.length > 0" class="error-messages">
@@ -85,7 +85,7 @@ export default {
     };
   },
   methods: {
-    removeAt(id) {
+    deleteAt(id) {
       this.deleteId = id;
       this.$modal.show('delete-presenter-modal');
     },
@@ -94,10 +94,10 @@ export default {
       if (this.checkFile(file)) {
         this.url = URL.createObjectURL(file);
       } else {
-        this.deletePreview();
+        this.removePreview();
       }
     },
-    deletePreview() {
+    removePreview() {
       this.url = '';
       URL.revokeObjectURL(this.url);
       this.$refs.preview.value = "";
@@ -122,7 +122,7 @@ export default {
     hideAddModal() {
       this.$modal.hide('add-presenter-modal');
       this.inputTitle = "";
-      this.deletePreview();
+      this.removePreview();
     },
     savePresenter() {
       id++;
