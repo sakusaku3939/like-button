@@ -2,7 +2,7 @@
   <div id="app">
     <h1>発表者の追加・編集</h1>
 
-    <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions">
+    <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions" @end="endDrag">
       <li v-for="(element) in list" :key="element.id">
         <i class="fas fa-bars handle"></i>
         <div class="image"></div>
@@ -68,7 +68,7 @@ export default {
         disabled: false,
         ghostClass: "ghost"
       };
-    }
+    },
   },
   data() {
     return {
@@ -78,13 +78,15 @@ export default {
         {id: 2, title: "presenter3"}
       ],
       deleteId: 0,
-      dragging: false,
       inputTitle: "",
       url: "",
       fileErrorMessages: [],
     };
   },
   methods: {
+    endDrag() {
+      console.log(this.list)
+    },
     deleteAt(id) {
       this.deleteId = id;
       this.$modal.show('delete-presenter-modal');
