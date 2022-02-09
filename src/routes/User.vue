@@ -13,11 +13,7 @@
 
 <script>
 import lottie from "lottie-web";
-import {initializeApp} from 'firebase/app';
 import {getDatabase, ref, set, increment} from "firebase/database";
-import config from "../config/firebase-config.js"
-
-initializeApp(config);
 
 let animation;
 const db = getDatabase();

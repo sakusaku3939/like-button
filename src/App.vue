@@ -1,14 +1,18 @@
 <template>
   <div id="app">
-    <router-link to="/">Home </router-link>
-    <router-link to="/screen">Screen </router-link>
+    <router-link to="/">Home</router-link>
+    <router-link to="/screen">Screen</router-link>
     <router-link to="/admin">Admin</router-link>
-    <router-view />
+    <router-view/>
   </div>
 </template>
 
 <script>
+import config from "./config/firebase-config.js"
+import {initializeApp} from 'firebase/app';
 
+initializeApp(config);
+export default {}
 </script>
 
 <style>
