@@ -51,8 +51,10 @@
 import Vue from "vue";
 import draggable from "vuedraggable";
 import VModal from 'vue-js-modal'
+import {getFirestore, doc, setDoc} from "firebase/firestore";
 
 Vue.use(VModal, {componentName: 'modal'})
+const db = getFirestore();
 let id = 3;
 
 export default {
@@ -87,12 +89,17 @@ export default {
     onUpdate: function (e) {
       this.reorder(e.newIndex);
       this.list.forEach((list) => {
-        console.log(list.order)
+        setDoc(doc(db, "order", list.order.toString()), {
+          id: list.id,
+        }, {merge: true});
       });
     },
     reorder(newIndex) {
       const deleteList = this.list.splice(newIndex, 1);
       this.list.splice(newIndex, 0, deleteList[0])
+      this.list.map(function (list, index) {
+        list.id = index;
+      });
     },
     deleteAt(id) {
       this.deleteId = id;
@@ -135,7 +142,7 @@ export default {
     },
     savePresenter() {
       id++;
-      this.list.push({id, title: this.inputTitle});
+      this.list.push({id, title: this.inputTitle, order: id});
       this.hideAddModal();
     },
     deletePresenter() {
