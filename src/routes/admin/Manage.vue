@@ -2,7 +2,7 @@
   <div id="app">
     <h1>発表者の追加・編集</h1>
 
-    <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions" @end="endDrag">
+    <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions" @update="onUpdate">
       <li v-for="(element) in list" :key="element.id">
         <i class="fas fa-bars handle"></i>
         <div class="image"></div>
@@ -73,9 +73,9 @@ export default {
   data() {
     return {
       list: [
-        {id: 0, title: "presenter1"},
-        {id: 1, title: "presenter2"},
-        {id: 2, title: "presenter3"}
+        {id: 0, title: "presenter1", order: 0},
+        {id: 1, title: "presenter2", order: 1},
+        {id: 2, title: "presenter3", order: 2}
       ],
       deleteId: 0,
       inputTitle: "",
@@ -84,8 +84,15 @@ export default {
     };
   },
   methods: {
-    endDrag() {
-      console.log(this.list)
+    onUpdate: function (e) {
+      this.reorder(e.newIndex);
+      this.list.forEach((list) => {
+        console.log(list.order)
+      });
+    },
+    reorder(newIndex) {
+      const deleteList = this.list.splice(newIndex, 1);
+      this.list.splice(newIndex, 0, deleteList[0])
     },
     deleteAt(id) {
       this.deleteId = id;
