@@ -2,8 +2,9 @@
   <div id="app">
     <h1>発表者の追加・編集</h1>
 
-    <draggable tag="ul" :list="list" class="list-group" handle=".handle" v-bind="dragOptions" @update="onUpdate">
-      <li v-for="(element) in list" :key="element.id">
+    <draggable tag="ul" :list="this.presenterList" class="list-group" handle=".handle" v-bind="dragOptions"
+               @update="onUpdate">
+      <li v-for="(element) in this.presenterList" :key="element.id">
         <i class="fas fa-bars handle"></i>
         <div class="image"></div>
         <span class="title">{{ element.title }} </span>
@@ -36,7 +37,8 @@
 
     <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="deletePresenter" onsubmit="return false">
-        <p v-if="this.findIndex(deleteId) !== -1">{{ list[this.findIndex(deleteId)].title }} を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="this.findIndex(deleteId) !== -1">{{ this.presenterList[this.findIndex(deleteId)].title }}
+          を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
@@ -51,14 +53,12 @@
 import Vue from "vue";
 import draggable from "vuedraggable";
 import VModal from 'vue-js-modal'
-import {getFirestore, doc, setDoc} from "firebase/firestore";
+import {getFirestore, doc, setDoc, getDocs, collection} from "firebase/firestore";
 
 Vue.use(VModal, {componentName: 'modal'})
 const db = getFirestore();
-let id = 3;
 
 export default {
-  order: 5,
   components: {
     draggable,
   },
@@ -72,13 +72,12 @@ export default {
       };
     },
   },
+  created() {
+    this.updatePresenterList();
+  },
   data() {
     return {
-      list: [
-        {id: 0, title: "presenter1", order: 0},
-        {id: 1, title: "presenter2", order: 1},
-        {id: 2, title: "presenter3", order: 2}
-      ],
+      presenterList: [],
       deleteId: 0,
       inputTitle: "",
       url: "",
@@ -87,19 +86,41 @@ export default {
   },
   methods: {
     onUpdate: function (e) {
-      this.reorder(e.newIndex);
-      this.list.forEach((list) => {
+      const deleteList = this.presenterList.splice(e.newIndex, 1);
+      this.presenterList.splice(e.newIndex, 0, deleteList[0])
+      this.presenterList.map(function (list, index) {
+        list.order = index;
+      });
+
+      this.presenterList.forEach((list) => {
         setDoc(doc(db, "order", list.order.toString()), {
           id: list.id,
         }, {merge: true});
       });
     },
-    reorder(newIndex) {
-      const deleteList = this.list.splice(newIndex, 1);
-      this.list.splice(newIndex, 0, deleteList[0])
-      this.list.map(function (list, index) {
-        list.id = index;
+    async getAllPresenter() {
+      return await getDocs(collection(db, "presenter"));
+    },
+    async setPresenter(id, title, imageURL) {
+      return await setDoc(doc(db, "presenter", id.toString()), {
+        title: title,
+        imageURL: imageURL,
+      }, {merge: true});
+    },
+    async updatePresenterList() {
+      this.presenterList = [];
+      let orderList = {};
+      const orderSnapshot = await getDocs(collection(db, "order"));
+      orderSnapshot.forEach((doc) => {
+        orderList[doc.id] = doc.data().id;
       });
+
+      const snapshot = await this.getAllPresenter();
+      snapshot.forEach((doc) => {
+        this.presenterList.push({id: doc.id, title: doc.data().title, order: orderList[doc.id]});
+      });
+
+      this.presenterList.sort((a, b) => a.order - b.order);
     },
     deleteAt(id) {
       this.deleteId = id;
@@ -140,15 +161,20 @@ export default {
       this.inputTitle = "";
       this.removePreview();
     },
-    savePresenter() {
-      id++;
-      this.list.push({id, title: this.inputTitle, order: id});
+    async savePresenter() {
+      let maxId = -1;
+      const snapshot = await this.getAllPresenter();
+      snapshot.forEach((doc) => maxId = Math.max(maxId, doc.id));
+      maxId++;
+
+      await this.setPresenter(maxId, this.inputTitle, "");
+      this.presenterList.push({id: maxId, title: this.inputTitle, order: maxId});
       this.hideAddModal();
     },
     deletePresenter() {
       let index = this.findIndex(this.deleteId);
       if (index !== -1) {
-        this.list.splice(index, 1);
+        this.presenterList.splice(index, 1);
       }
       this.hideDeleteModal();
     },
@@ -156,7 +182,7 @@ export default {
       this.$modal.hide('delete-presenter-modal');
     },
     findIndex(argId) {
-      return this.list.findIndex(({id}) => id === argId);
+      return this.presenterList.findIndex(({id}) => id === argId);
     },
   }
 };
