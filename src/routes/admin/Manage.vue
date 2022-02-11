@@ -53,7 +53,7 @@
 import Vue from "vue";
 import draggable from "vuedraggable";
 import VModal from 'vue-js-modal'
-import {getFirestore, doc, setDoc, getDocs, collection} from "firebase/firestore";
+import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
 
 Vue.use(VModal, {componentName: 'modal'})
 const db = getFirestore();
@@ -86,41 +86,38 @@ export default {
   },
   methods: {
     onUpdate: function (e) {
-      const deleteList = this.presenterList.splice(e.newIndex, 1);
-      this.presenterList.splice(e.newIndex, 0, deleteList[0])
-      this.presenterList.map(function (list, index) {
-        list.order = index;
-      });
-
-      this.presenterList.forEach((list) => {
-        setDoc(doc(db, "order", list.order.toString()), {
-          id: list.id,
-        }, {merge: true});
-      });
-    },
-    async getAllPresenter() {
-      return await getDocs(collection(db, "presenter"));
-    },
-    async setPresenter(id, title, imageURL) {
-      return await setDoc(doc(db, "presenter", id.toString()), {
-        title: title,
-        imageURL: imageURL,
-      }, {merge: true});
+      this.reflectOrder(e.newIndex);
     },
     async updatePresenterList() {
       this.presenterList = [];
       let orderList = {};
       const orderSnapshot = await getDocs(collection(db, "order"));
       orderSnapshot.forEach((doc) => {
-        orderList[doc.id] = doc.data().id;
+        orderList[doc.data().id] = doc.id;
       });
 
-      const snapshot = await this.getAllPresenter();
+      const snapshot = await getDocs(collection(db, "presenter"));
       snapshot.forEach((doc) => {
         this.presenterList.push({id: doc.id, title: doc.data().title, order: orderList[doc.id]});
       });
 
       this.presenterList.sort((a, b) => a.order - b.order);
+    },
+    async reflectOrder(newIndex) {
+      const results = [];
+      const deleteList = this.presenterList.splice(newIndex, 1);
+      this.presenterList.splice(newIndex, 0, deleteList[0]);
+      this.presenterList.map(function (list, index) {
+        list.order = index;
+      });
+      this.presenterList.forEach((list) => {
+        results.push(
+            setDoc(doc(db, "order", list.order.toString()), {
+              id: parseInt(list.id),
+            }, {merge: true})
+        );
+      });
+      await Promise.all(results);
     },
     deleteAt(id) {
       this.deleteId = id;
@@ -163,18 +160,33 @@ export default {
     },
     async savePresenter() {
       let maxId = -1;
-      const snapshot = await this.getAllPresenter();
-      snapshot.forEach((doc) => maxId = Math.max(maxId, doc.id));
+      const snapshot = await getDocs(collection(db, "presenter"));
+      snapshot.forEach((doc) => maxId = Math.max(maxId, parseInt(doc.id)));
       maxId++;
 
-      await this.setPresenter(maxId, this.inputTitle, "");
-      this.presenterList.push({id: maxId, title: this.inputTitle, order: maxId});
+      const lastOrder = this.presenterList.length;
+      await setDoc(doc(db, "presenter", maxId.toString()), {
+        title: this.inputTitle,
+        imageURL: "",
+      }, {merge: true});
+      await setDoc(doc(db, "order", lastOrder.toString()), {
+        id: maxId,
+      }, {merge: true});
+      this.presenterList.push({id: maxId, title: this.inputTitle, order: lastOrder});
+
       this.hideAddModal();
     },
-    deletePresenter() {
+    async deletePresenter() {
       let index = this.findIndex(this.deleteId);
       if (index !== -1) {
+        const results = [];
+        results.push(deleteDoc(doc(db, "order", index.toString())));
+        results.push(deleteDoc(doc(db, "presenter", this.deleteId.toString())));
         this.presenterList.splice(index, 1);
+        await Promise.all(results);
+
+        await this.reflectOrder(0);
+        await deleteDoc(doc(db, "order", this.presenterList.length.toString()));
       }
       this.hideDeleteModal();
     },
