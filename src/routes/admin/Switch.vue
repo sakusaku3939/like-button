@@ -10,13 +10,13 @@
         <span class="title">{{ element.title }} </span>
         <div class="heart-counter">
           <i class="fas fa-heart"></i>
-          <span v-if="element.id === current.id">{{ current.heartCounter }}</span>
-          <span v-else>{{ findById(heartCounterList, element.id).heartCounter }}</span>
+          <span v-if="element.id === current.id">{{ current.likeCount }}</span>
+          <span v-else>{{ findById(likeCountList, element.id).likeCount || 0 }}</span>
         </div>
       </li>
     </ul>
 
-    <h2>現在の発表者: {{ findById(presenterList, current.id).title }}</h2>
+    <h2>現在の発表者: {{ findById(presenterList, current.id).title || "なし" }}</h2>
 
     <modal name="change-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="changePresenter" onsubmit="return false">
@@ -32,20 +32,44 @@
 
 <script>
 import presenter from "../../common/presenter-list.js"
+import {getDatabase, ref, set, get, child, onValue} from "firebase/database";
+
+const db = getDatabase();
 
 export default {
   created() {
+    onValue(ref(db, "current"), (snapshot) => {
+      if (snapshot.exists()) {
+        this.current = {id: snapshot.val().id, likeCount: snapshot.val().count}
+      }
+    });
     presenter.updatePresenterList().then((list) => this.presenterList = list);
+    get(child(ref(db), "like-count")).then((snapshot) => {
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        if (Array.isArray(val)) {
+          val.forEach((e) => {
+            this.likeCountList.push({id: e.id, likeCount: e.count});
+          });
+        } else {
+          this.likeCountList.push({id: val.id, likeCount: val.count});
+        }
+      } else {
+        this.presenterList.forEach((e) => {
+          this.likeCountList.push({id: e.id, likeCount: 0});
+          set(ref(db, "like-count/" + e.order), {
+            id: e.id,
+            count: 0,
+          });
+        });
+      }
+    });
   },
   data() {
     return {
       presenterList: [],
-      heartCounterList: [
-        {id: 0, heartCounter: 0},
-        {id: 1, heartCounter: 0},
-        {id: 2, heartCounter: 0},
-      ],
-      current: {id: 0, heartCounter: 30},
+      likeCountList: [],
+      current: {id: undefined, likeCount: undefined},
       changeId: 0,
     };
   },
@@ -54,11 +78,22 @@ export default {
       const index = list.findIndex(({id}) => id === argId);
       return index !== -1 ? list[index] : [];
     },
-    changePresenter() {
-      this.findById(this.heartCounterList, this.current.id).heartCounter = this.current.heartCounter;
+    async changePresenter() {
+      const countList = this.findById(this.likeCountList, this.current.id);
+      if (countList.id !== undefined) {
+        countList.likeCount = this.current.likeCount;
+        await set(ref(db, "like-count/" + this.findById(this.presenterList, this.current.id).order), {
+          id: this.current.id,
+          count: this.current.likeCount,
+        });
+      }
 
       this.current.id = this.findById(this.presenterList, this.changeId).id;
-      this.current.heartCounter = this.findById(this.heartCounterList, this.changeId).heartCounter;
+      this.current.likeCount = this.findById(this.likeCountList, this.changeId).likeCount;
+      await set(ref(db, "current"), {
+        id: this.current.id,
+        count: this.current.likeCount,
+      });
 
       this.hideChangeModal();
     },
