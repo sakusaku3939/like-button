@@ -2,9 +2,9 @@
   <div id="app">
     <h1>発表者の追加・編集</h1>
 
-    <draggable tag="ul" :list="this.presenterList" class="list-group" handle=".handle" v-bind="dragOptions"
+    <draggable tag="ul" :list="presenterList" class="list-group" handle=".handle" v-bind="dragOptions"
                @update="onUpdate">
-      <li v-for="(element) in this.presenterList" :key="element.id">
+      <li v-for="(element) in presenterList" :key="element.id">
         <i class="fas fa-bars handle"></i>
         <div class="image"></div>
         <span class="title">{{ element.title }} </span>
@@ -14,7 +14,7 @@
     </draggable>
 
     <modal name="add-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
-      <form class="modal" @submit="savePresenter" onsubmit="return false">
+      <form class="modal" @submit="addPresenter" onsubmit="return false">
         <h2>発表者を追加</h2>
         <input class="input-title" type="text" placeholder="発表タイトル" v-model="inputTitle" required>
         <div style="margin: 8px 0">サムネイル画像</div>
@@ -37,7 +37,7 @@
 
     <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="deletePresenter" onsubmit="return false">
-        <p v-if="this.findIndex(deleteId) !== -1">{{ this.presenterList[this.findIndex(deleteId)].title }}
+        <p v-if="findIndex(deleteId) !== -1">{{ presenterList[findIndex(deleteId)].title }}
           を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
@@ -53,6 +53,7 @@
 import Vue from "vue";
 import draggable from "vuedraggable";
 import VModal from 'vue-js-modal'
+import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
 
 Vue.use(VModal, {componentName: 'modal'})
@@ -73,7 +74,7 @@ export default {
     },
   },
   created() {
-    this.updatePresenterList();
+    presenter.updatePresenterList().then((list) => this.presenterList = list);
   },
   data() {
     return {
@@ -85,43 +86,11 @@ export default {
     };
   },
   methods: {
-    onUpdate: function (e) {
-      this.reflectOrder(e.newIndex);
+    onUpdate: async function (e) {
+      await presenter.reflectOrder(this.presenterList, e.newIndex);
     },
-    async updatePresenterList() {
-      this.presenterList = [];
-      let orderList = {};
-      const orderSnapshot = await getDocs(collection(db, "order"));
-      orderSnapshot.forEach((doc) => {
-        orderList[doc.data().id] = doc.id;
-      });
-
-      const snapshot = await getDocs(collection(db, "presenter"));
-      snapshot.forEach((doc) => {
-        this.presenterList.push({id: doc.id, title: doc.data().title, order: orderList[doc.id]});
-      });
-
-      this.presenterList.sort((a, b) => a.order - b.order);
-    },
-    async reflectOrder(newIndex) {
-      const results = [];
-      const deleteList = this.presenterList.splice(newIndex, 1);
-      this.presenterList.splice(newIndex, 0, deleteList[0]);
-      this.presenterList.map(function (list, index) {
-        list.order = index;
-      });
-      this.presenterList.forEach((list) => {
-        results.push(
-            setDoc(doc(db, "order", list.order.toString()), {
-              id: parseInt(list.id),
-            }, {merge: true})
-        );
-      });
-      await Promise.all(results);
-    },
-    deleteAt(id) {
-      this.deleteId = id;
-      this.$modal.show('delete-presenter-modal');
+    findIndex(argId) {
+      return this.presenterList.findIndex(({id}) => id === argId);
     },
     uploadFile() {
       const file = this.$refs.preview.files[0];
@@ -150,15 +119,7 @@ export default {
       }
       return result;
     },
-    showAddModal() {
-      this.$modal.show('add-presenter-modal');
-    },
-    hideAddModal() {
-      this.$modal.hide('add-presenter-modal');
-      this.inputTitle = "";
-      this.removePreview();
-    },
-    async savePresenter() {
+    async addPresenter() {
       let maxId = -1;
       const snapshot = await getDocs(collection(db, "presenter"));
       snapshot.forEach((doc) => maxId = Math.max(maxId, parseInt(doc.id)));
@@ -185,16 +146,25 @@ export default {
         this.presenterList.splice(index, 1);
         await Promise.all(results);
 
-        await this.reflectOrder(0);
+        await presenter.reflectOrder(this.presenterList, 0);
         await deleteDoc(doc(db, "order", this.presenterList.length.toString()));
       }
       this.hideDeleteModal();
     },
+    showAddModal() {
+      this.$modal.show('add-presenter-modal');
+    },
+    hideAddModal() {
+      this.$modal.hide('add-presenter-modal');
+      this.inputTitle = "";
+      this.removePreview();
+    },
+    deleteAt(id) {
+      this.deleteId = id;
+      this.$modal.show('delete-presenter-modal');
+    },
     hideDeleteModal() {
       this.$modal.hide('delete-presenter-modal');
-    },
-    findIndex(argId) {
-      return this.presenterList.findIndex(({id}) => id === argId);
     },
   }
 };
