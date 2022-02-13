@@ -3,7 +3,7 @@
     <h1>発表者を切り替える</h1>
 
     <ul class="list-group">
-      <li v-for="(element) in list" :key="element.id" @click="changeAt(element.id)">
+      <li v-for="(element) in presenterList" :key="element.id" @click="changeAt(element.id)">
         <i class="fas fa-play play" v-if="element.id === current.id"></i>
         <div class="play-dummy" v-else></div>
         <div class="image"></div>
@@ -11,16 +11,16 @@
         <div class="heart-counter">
           <i class="fas fa-heart"></i>
           <span v-if="element.id === current.id">{{ current.heartCounter }}</span>
-          <span v-else>{{ element.heartCounter }}</span>
+          <span v-else>{{ findById(heartCounterList, element.id).heartCounter }}</span>
         </div>
       </li>
     </ul>
 
-    <h2>現在の発表者: {{ current.title }}</h2>
+    <h2>現在の発表者: {{ findById(presenterList, current.id).title }}</h2>
 
     <modal name="change-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="changePresenter" onsubmit="return false">
-        <p>発表者を {{ this.list[changeId].title }} に切り替えますか？</p>
+        <p>発表者を {{ findById(presenterList, changeId).title }} に切り替えますか？</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideChangeModal">キャンセル</button>
           <input class="ok" type="submit" value="切り替える">
@@ -31,32 +31,40 @@
 </template>
 
 <script>
+import presenter from "../../common/presenter-list.js"
+
 export default {
+  created() {
+    presenter.updatePresenterList().then((list) => this.presenterList = list);
+  },
   data() {
     return {
-      list: [
-        {id: 0, title: "presenter1", heartCounter: 0},
-        {id: 1, title: "presenter2", heartCounter: 0},
-        {id: 2, title: "presenter3", heartCounter: 0}
+      presenterList: [],
+      heartCounterList: [
+        {id: 0, heartCounter: 0},
+        {id: 1, heartCounter: 0},
+        {id: 2, heartCounter: 0},
       ],
-      current: {id: 0, title: "presenter1", heartCounter: 30},
+      current: {id: 0, heartCounter: 30},
       changeId: 0,
     };
   },
   methods: {
+    findById(list, argId) {
+      const index = list.findIndex(({id}) => id === argId);
+      return index !== -1 ? list[index] : [];
+    },
+    changePresenter() {
+      this.findById(this.heartCounterList, this.current.id).heartCounter = this.current.heartCounter;
+
+      this.current.id = this.findById(this.presenterList, this.changeId).id;
+      this.current.heartCounter = this.findById(this.heartCounterList, this.changeId).heartCounter;
+
+      this.hideChangeModal();
+    },
     changeAt(id) {
       this.changeId = id;
       this.$modal.show('change-presenter-modal');
-    },
-    changePresenter() {
-      this.list[this.current.id].heartCounter = this.current.heartCounter;
-
-      let list = this.list[this.changeId];
-      this.current.id = list.id;
-      this.current.title = list.title;
-      this.current.heartCounter = list.heartCounter;
-
-      this.hideChangeModal();
     },
     hideChangeModal() {
       this.$modal.hide('change-presenter-modal');
