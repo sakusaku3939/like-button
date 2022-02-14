@@ -9,25 +9,24 @@ import lottie from "lottie-web";
 import {getDatabase, ref, onValue} from "firebase/database";
 
 let animation;
-let isInitialLoad = true;
 const db = getDatabase();
-
-onValue(ref(db, "current/count"), (snapshot) => {
-  const count = snapshot.val();
-  if (count !== 0 && !isInitialLoad) {
-    animation.playSegments([4, 60], true);
-  }
-  isInitialLoad = false;
-});
 
 export default {
   mounted() {
+    let currentId;
     animation = lottie.loadAnimation({
       container: document.querySelector('#lottie'),
       renderer: 'svg',
       loop: false,
       autoplay: false,
       path: 'https://assets8.lottiefiles.com/packages/lf20_9wcp0umd.json'
+    });
+    onValue(ref(db, "current"), (snapshot) => {
+      const current = snapshot.val();
+      if (currentId !== undefined && currentId === current.id) {
+        animation.playSegments([4, 60], true);
+      }
+      currentId = current.id;
     });
   }
 }
