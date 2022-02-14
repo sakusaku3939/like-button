@@ -12,7 +12,7 @@ let animation;
 let isInitialLoad = true;
 const db = getDatabase();
 
-onValue(ref(db, 'like_count/count'), (snapshot) => {
+onValue(ref(db, "current/count"), (snapshot) => {
   const count = snapshot.val();
   if (count !== 0 && !isInitialLoad) {
     animation.playSegments([4, 60], true);

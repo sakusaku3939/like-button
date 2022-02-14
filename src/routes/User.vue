@@ -13,7 +13,7 @@
 
 <script>
 import lottie from "lottie-web";
-import {getDatabase, ref, set, increment} from "firebase/database";
+import {getDatabase, ref, update, increment} from "firebase/database";
 
 let animation;
 const db = getDatabase();
@@ -31,7 +31,7 @@ export default {
   methods: {
     click_like_button() {
       animation.playSegments([4, 60], true);
-      set(ref(db, 'like_count'), {count: increment(1)});
+      update(ref(db, "current"), {count: increment(1)});
     }
   }
 }
