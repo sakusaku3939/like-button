@@ -24,7 +24,7 @@
 
 <script>
 import lottie from "lottie-web";
-import {getDatabase, ref, update, increment} from "firebase/database";
+import {getDatabase, ref, push, update, increment, serverTimestamp} from "firebase/database";
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
 
@@ -65,11 +65,16 @@ export default {
           button: false,
         });
       } else {
-        swal({
-          text: "コメントが送信されました",
-          icon: "success",
-          button: false,
-        });
+        push(ref(db, "comments"), {
+          message: this.text,
+          datetime: serverTimestamp(),
+        }).then(() =>
+            swal({
+              text: "コメントが送信されました",
+              icon: "success",
+              button: false,
+            })
+        );
       }
       this.text = "";
     },
