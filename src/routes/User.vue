@@ -67,7 +67,7 @@ export default {
       } else {
         push(ref(db, "comments"), {
           message: this.text,
-          datetime: serverTimestamp(),
+          timestamp: serverTimestamp(),
         }).then(() =>
             swal({
               text: "コメントが送信されました",

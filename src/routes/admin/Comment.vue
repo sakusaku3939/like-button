@@ -9,10 +9,10 @@
         <th class="medium">時間</th>
         <th class="small"></th>
       </tr>
-      <tr v-for="(element) in reverseList()" :key="element.id">
-        <td>{{ element.id }}</td>
-        <td>{{ element.comment }}</td>
-        <td>{{ element.timeCode }}</td>
+      <tr v-for="(element, index) in commentList" :key="element.id">
+        <td>{{ commentList.length - index }}</td>
+        <td>{{ element.message }}</td>
+        <td>{{ formatDate(element.timestamp) }}</td>
         <td>
           <button class="delete" @click="deleteAt(element.id)">削除</button>
         </td>
@@ -21,7 +21,7 @@
 
     <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="deleteComment" onsubmit="return false">
-        <p v-show="this.findIndex(deleteId) !== -1">{{ list[this.findIndex(deleteId)].comment }} を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="findIndex(deleteId) !== -1">{{ commentList[findIndex(deleteId)].message }} を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
@@ -32,37 +32,51 @@
 </template>
 
 <script>
+import {getDatabase, onValue, ref, remove} from "firebase/database";
+
+const db = getDatabase();
+
 export default {
+  created() {
+    onValue(ref(db, "comments"), (snapshot) => {
+      this.commentList = [];
+      snapshot.forEach((childSnapshot) => {
+        const val = childSnapshot.val();
+        this.commentList.push({id: childSnapshot.key, message: val.message, timestamp: val.timestamp});
+      });
+      this.commentList = this.commentList.slice().reverse();
+    });
+  },
   data() {
     return {
-      list: [
-        {id: 0, comment: "コメント1", timeCode: "16:15:04"},
-        {id: 1, comment: "コメント2", timeCode: "16:16:32"},
-        {id: 2, comment: "コメント3", timeCode: "16:18:12"}
-      ],
+      commentList: [],
       deleteId: 0,
     };
   },
   methods: {
-    reverseList() {
-      return this.list.slice().reverse();
+    formatDate(timestamp) {
+      const datetime = new Date(timestamp);
+      const hours = ('00' + datetime.getHours()).slice(-2);
+      const minutes = ('00' + datetime.getMinutes()).slice(-2);
+      const seconds = ('00' + datetime.getSeconds()).slice(-2);
+      return hours + ":" + minutes + ":" + seconds;
+    },
+    findIndex(argId) {
+      return this.commentList.findIndex(({id}) => id === argId);
     },
     deleteAt(id) {
       this.deleteId = id;
       this.$modal.show('delete-presenter-modal');
     },
-    deleteComment() {
+    async deleteComment() {
       let index = this.findIndex(this.deleteId);
       if (index !== -1) {
-        this.list.splice(index, 1);
+        await remove(ref(db, "comments/" + this.deleteId));
       }
       this.hideDeleteModal();
     },
     hideDeleteModal() {
       this.$modal.hide('delete-presenter-modal');
-    },
-    findIndex(argId) {
-      return this.list.findIndex(({id}) => id === argId);
     },
   },
 }
