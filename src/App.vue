@@ -1,9 +1,13 @@
 <template>
   <div id="app">
-    <router-link to="/">Home</router-link>
-    <router-link to="/screen">Screen</router-link>
-    <router-link to="/admin">Admin</router-link>
     <router-view/>
+    <div class="link">
+      <router-link to="/">Home</router-link>
+      <span>│</span>
+      <router-link to="/screen">Screen</router-link>
+      <span>│</span>
+      <router-link to="/admin">Admin</router-link>
+    </div>
   </div>
 </template>
 
@@ -12,6 +16,14 @@ import config from "./config/firebase-config.js"
 import {initializeApp} from 'firebase/app';
 
 initializeApp(config);
+
+const appHeight = () => {
+  const height = window.innerHeight;
+  document.documentElement.style.setProperty('--vh', height / 100 + 'px');
+};
+window.addEventListener('resize', appHeight);
+appHeight();
+
 export default {}
 </script>
 
@@ -19,7 +31,25 @@ export default {}
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;900&display=swap');
 @import "./common/modal.css";
 
+:root {
+  --vh: 100vh;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 #app {
   font-family: 'Noto Sans JP', sans-serif;
+  height: calc(var(--vh) * 100);
+}
+
+.link {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 </style>

@@ -7,7 +7,7 @@
       </div>
       <div class="title">
         <h1>発表に「いいね」を送る</h1>
-        <span>※一回の発表につき100回まで可能です</span>
+        <span>※一回の発表につき何回でも可能です</span>
       </div>
     </div>
     <div class="bottom">
@@ -88,10 +88,6 @@ export default {
 </script>
 
 <style scoped>
-#app {
-  overflow: hidden;
-}
-
 .center {
   position: absolute;
   top: 50%;
@@ -115,7 +111,7 @@ export default {
   height: 60vw;
   max-width: 320px;
   max-height: 320px;
-  margin: 24px auto;
+  margin: 8px auto;
 }
 
 .button {
@@ -144,7 +140,7 @@ export default {
   justify-content: center;
   align-items: flex-end;
   width: 100%;
-  height: 95vh;
+  height: calc(var(--vh) * 95);
 }
 
 .comment {

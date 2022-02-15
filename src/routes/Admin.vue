@@ -26,8 +26,6 @@ export default {
 #app {
   display: flex;
   align-items: center;
-  height: 95vh;
-  overflow: hidden;
 }
 
 .card-list {
@@ -77,6 +75,12 @@ export default {
 @media screen and (max-width: 900px) {
   .card-list {
     margin: 0;
+  }
+}
+
+@media screen and (max-width: 490px) {
+  .card-list:after {
+    display: none;
   }
 }
 </style>
