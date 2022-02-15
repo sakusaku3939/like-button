@@ -1,6 +1,13 @@
 <template>
   <div id="app">
     <router-view/>
+    <div class="link" v-show="hostname === 'localhost'">
+      <router-link to="/">Home</router-link>
+      <span>│</span>
+      <router-link to="/screen">Screen</router-link>
+      <span>│</span>
+      <router-link to="/admin">Admin</router-link>
+    </div>
   </div>
 </template>
 
@@ -16,7 +23,16 @@ const appHeight = () => {
 window.addEventListener('resize', appHeight);
 appHeight();
 
-export default {}
+export default {
+  created() {
+    this.hostname = document.location.hostname;
+  },
+  data() {
+    return {
+      hostname: '',
+    };
+  },
+}
 </script>
 
 <style>
@@ -36,5 +52,12 @@ body {
 #app {
   font-family: 'Noto Sans JP', sans-serif;
   height: calc(var(--vh) * 100);
+}
+
+.link {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 </style>

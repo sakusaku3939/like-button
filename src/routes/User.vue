@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div class="link">
+    <div class="screen-link">
       <router-link to="/screen">発表画面に移動 →</router-link>
     </div>
     <div class="center">
@@ -64,7 +64,7 @@ export default {
   --fixed-center: 50vh;
 }
 
-.link {
+.screen-link {
   position: absolute;
   top: 12px;
   right: 16px;

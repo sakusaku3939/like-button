@@ -35,13 +35,6 @@ export default {
   align-items: center;
 }
 
-.link {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
 .card-list {
   display: flex;
   flex-wrap: wrap;
