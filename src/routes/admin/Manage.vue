@@ -19,11 +19,11 @@
         <input class="input-title" type="text" placeholder="発表タイトル" v-model="inputTitle" required>
         <div style="margin: 8px 0">サムネイル画像</div>
         <input type="file" ref="preview" @change="uploadFile" accept="image/jpeg, image/png">
-        <div class="preview" v-if="url">
+        <div class="preview" v-show="url">
           <div class="delete-button" @click="removePreview"><i class="fas fa-times"></i></div>
           <img :src="url" alt="">
         </div>
-        <ul v-if="fileErrorMessages.length > 0" class="error-messages">
+        <ul v-show="fileErrorMessages.length > 0" class="error-messages">
           <li v-for="(message, index) in fileErrorMessages" :key="index">
             {{ message }}
           </li>
@@ -37,7 +37,7 @@
 
     <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
       <form class="modal" @submit="deletePresenter" onsubmit="return false">
-        <p v-if="findIndex(deleteId) !== -1">{{ presenterList[findIndex(deleteId)].title }}
+        <p v-show="findIndex(deleteId) !== -1">{{ presenterList[findIndex(deleteId)].title }}
           を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
