@@ -25,6 +25,8 @@
 <script>
 import lottie from "lottie-web";
 import {getDatabase, ref, update, increment} from "firebase/database";
+import swal from 'sweetalert';
+import ngWord from "../config/ng-word.js"
 
 let animation;
 const db = getDatabase();
@@ -53,7 +55,23 @@ export default {
       update(ref(db, "current"), {count: increment(1)});
     },
     sendComment() {
-      console.log(this.text);
+      if (this.text === "") return;
+
+      const ng = decodeURIComponent(escape(window.atob(ngWord.text))).replace(/,/g, '|');
+      if (RegExp(ng).test(this.text) || /^[A-Za-z]*$/.test(this.text)) {
+        swal({
+          text: "コメントの送信に失敗しました",
+          icon: "error",
+          button: false,
+        });
+      } else {
+        swal({
+          text: "コメントが送信されました",
+          icon: "success",
+          button: false,
+        });
+      }
+      this.text = "";
     },
   }
 }
