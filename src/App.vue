@@ -1,13 +1,6 @@
 <template>
   <div id="app">
     <router-view/>
-    <div class="link">
-      <router-link to="/">Home</router-link>
-      <span>│</span>
-      <router-link to="/screen">Screen</router-link>
-      <span>│</span>
-      <router-link to="/admin">Admin</router-link>
-    </div>
   </div>
 </template>
 
@@ -18,8 +11,7 @@ import {initializeApp} from 'firebase/app';
 initializeApp(config);
 
 const appHeight = () => {
-  const height = window.innerHeight;
-  document.documentElement.style.setProperty('--vh', height / 100 + 'px');
+  document.documentElement.style.setProperty('--vh', window.innerHeight / 100 + 'px');
 };
 window.addEventListener('resize', appHeight);
 appHeight();
@@ -44,12 +36,5 @@ body {
 #app {
   font-family: 'Noto Sans JP', sans-serif;
   height: calc(var(--vh) * 100);
-}
-
-.link {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
 }
 </style>

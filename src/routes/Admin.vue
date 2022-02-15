@@ -1,5 +1,12 @@
 <template>
   <div id="app">
+    <div class="link">
+      <router-link to="/">Home</router-link>
+      <span>│</span>
+      <router-link to="/screen">Screen</router-link>
+      <span>│</span>
+      <router-link to="/admin">Admin</router-link>
+    </div>
     <div class="card-list">
       <router-link to="/admin/manage" class="card">
         <span class="fas fa-user-plus"></span>
@@ -26,6 +33,13 @@ export default {
 #app {
   display: flex;
   align-items: center;
+}
+
+.link {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .card-list {
