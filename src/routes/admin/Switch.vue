@@ -44,20 +44,22 @@ export default {
         this.current = {id: snapshot.val().id, likeCount: snapshot.val().count}
       }
     });
-    presenter.updatePresenterList().then((list) => this.presenterList = list);
-    get(child(ref(db), "like-count")).then((snapshot) => {
-      if (snapshot.exists()) {
-        snapshot.forEach((e) => {
-          this.likeCountList.push({id: parseInt(e.key), likeCount: e.val().count});
-        });
-      } else {
-        this.presenterList.forEach((e) => {
-          this.likeCountList.push({id: e.id, likeCount: 0});
-          set(ref(db, "like-count/" + e.id), {
-            count: 0,
+    presenter.updatePresenterList().then((list) => {
+      this.presenterList = list;
+      get(child(ref(db), "like-count")).then((snapshot) => {
+        if (snapshot.exists()) {
+          snapshot.forEach((e) => {
+            this.likeCountList.push({id: parseInt(e.key), likeCount: e.val().count});
           });
-        });
-      }
+        } else {
+          list.forEach((e) => {
+            this.likeCountList.push({id: e.id, likeCount: 0});
+            set(ref(db, "like-count/" + e.id), {
+              count: 0,
+            });
+          });
+        }
+      });
     });
   },
   data() {
