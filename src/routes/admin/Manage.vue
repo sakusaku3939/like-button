@@ -155,7 +155,6 @@ export default {
           });
         });
       }
-
       this.hideAddModal();
     },
     async deletePresenter() {
@@ -169,8 +168,10 @@ export default {
         this.presenterList.splice(index, 1);
         await Promise.all(results);
 
-        await presenter.reflectOrder(this.presenterList, 0);
-        await deleteDoc(doc(db, "order", this.presenterList.length.toString()));
+        if (this.presenterList.length) {
+          await presenter.reflectOrder(this.presenterList, 0);
+          await deleteDoc(doc(db, "order", this.presenterList.length.toString()));
+        }
       }
       this.hideDeleteModal();
     },
