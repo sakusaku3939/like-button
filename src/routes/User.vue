@@ -108,7 +108,7 @@ export default {
 }
 
 .title h1 {
-  margin-bottom: 8px;
+  margin: 8px 0;
 }
 
 .like-button {
@@ -117,7 +117,7 @@ export default {
   height: 60vw;
   max-width: 320px;
   max-height: 320px;
-  margin: 8px auto;
+  margin: 0 auto;
 }
 
 .button {
@@ -153,8 +153,8 @@ export default {
   width: 100%;
   text-align: center;
   background-color: white;
-  padding-top: 2px;
-  padding-bottom: 8px;
+  padding-top: 4px;
+  padding-bottom: 16px;
   z-index: 2;
 }
 
