@@ -6,7 +6,8 @@
       <li v-for="(element) in presenterList" :key="element.id" @click="changeAt(element.id)">
         <i class="fas fa-play play" v-if="element.id === current.id"></i>
         <div class="play-dummy" v-else></div>
-        <div class="image"></div>
+        <img class="image" v-if="element.imageURL" :src="element.imageURL" alt="">
+        <div class="image dummy" v-else/>
         <span class="title">{{ element.title }} </span>
         <div class="heart-counter">
           <i class="fas fa-heart"></i>
@@ -46,19 +47,13 @@ export default {
     presenter.updatePresenterList().then((list) => this.presenterList = list);
     get(child(ref(db), "like-count")).then((snapshot) => {
       if (snapshot.exists()) {
-        const val = snapshot.val();
-        if (Array.isArray(val)) {
-          val.forEach((e) => {
-            this.likeCountList.push({id: e.id, likeCount: e.count});
-          });
-        } else {
-          this.likeCountList.push({id: val.id, likeCount: val.count});
-        }
+        snapshot.forEach((e) => {
+          this.likeCountList.push({id: parseInt(e.key), likeCount: e.val().count});
+        });
       } else {
         this.presenterList.forEach((e) => {
           this.likeCountList.push({id: e.id, likeCount: 0});
-          set(ref(db, "like-count/" + e.order), {
-            id: e.id,
+          set(ref(db, "like-count/" + e.id), {
             count: 0,
           });
         });
@@ -82,8 +77,7 @@ export default {
       const countList = this.findById(this.likeCountList, this.current.id);
       if (countList.id !== undefined) {
         countList.likeCount = this.current.likeCount;
-        await set(ref(db, "like-count/" + this.findById(this.presenterList, this.current.id).order), {
-          id: this.current.id,
+        await set(ref(db, "like-count/" + this.current.id), {
           count: this.current.likeCount,
         });
       }
@@ -170,8 +164,11 @@ i.play {
 .image {
   width: 160px;
   height: 90px;
-  border: 1px solid rgba(0, 0, 0, 0.3);
   margin: 0 24px;
+}
+
+.dummy {
+  border: 1px solid rgba(0, 0, 0, 0.3);
 }
 
 .title {
