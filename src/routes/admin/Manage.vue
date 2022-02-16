@@ -6,8 +6,9 @@
                @update="onUpdate">
       <li v-for="(element) in presenterList" :key="element.id">
         <i class="fas fa-bars handle"></i>
-        <div class="image"></div>
-        <span class="title">{{ element.title }} </span>
+        <img class="image" v-if="element.imageURL" :src="element.imageURL" alt="">
+        <div class="image dummy" v-else/>
+        <span class="title">{{ element.title }}</span>
         <i class="fas fa-times remove" @click="deleteAt(element.id)"></i>
       </li>
       <i class="far fa-plus-square add" @click="showAddModal"></i>
@@ -54,9 +55,12 @@ import draggable from "vuedraggable";
 import VModal from 'vue-js-modal'
 import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
+import {getStorage, ref, uploadBytes, deleteObject} from "firebase/storage";
+import {remove, ref as refD, getDatabase} from "firebase/database";
 
 Vue.use(VModal, {componentName: 'modal'})
 const db = getFirestore();
+const storage = getStorage();
 
 export default {
   components: {
@@ -118,6 +122,15 @@ export default {
       }
       return result;
     },
+    getFileBlob(url, cb) {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'blob';
+      xhr.onload = () => {
+        cb(xhr.response);
+      };
+      xhr.open('GET', url);
+      xhr.send();
+    },
     async addPresenter() {
       let maxId = -1;
       const snapshot = await getDocs(collection(db, "presenter"));
@@ -132,7 +145,16 @@ export default {
       await setDoc(doc(db, "order", lastOrder.toString()), {
         id: maxId,
       }, {merge: true});
-      this.presenterList.push({id: maxId, title: this.inputTitle, order: lastOrder});
+      this.presenterList.push({id: maxId, imageURL: this.url, title: this.inputTitle, order: lastOrder});
+
+      if (this.url !== "") {
+        const storageRef = ref(storage, "files/" + maxId);
+        await new Promise((resolve) => {
+          this.getFileBlob(this.url, blob => {
+            uploadBytes(storageRef, blob).then(() => resolve());
+          });
+        });
+      }
 
       this.hideAddModal();
     },
@@ -142,6 +164,8 @@ export default {
         const results = [];
         results.push(deleteDoc(doc(db, "order", index.toString())));
         results.push(deleteDoc(doc(db, "presenter", this.deleteId.toString())));
+        results.push(deleteObject(ref(storage, "files/" + this.deleteId)).catch(() => false));
+        results.push(remove(refD(getDatabase(), "like-count/" + this.deleteId)));
         this.presenterList.splice(index, 1);
         await Promise.all(results);
 
@@ -214,8 +238,11 @@ i.remove {
 .image {
   width: 160px;
   height: 90px;
-  border: 1px solid rgba(0, 0, 0, 0.3);
   margin: 0 24px;
+}
+
+.dummy {
+  border: 1px solid rgba(0, 0, 0, 0.3);
 }
 
 .title {

@@ -1,19 +1,32 @@
 import {collection, doc, getDocs, getFirestore, setDoc} from "firebase/firestore";
+import {getStorage, ref, listAll, getDownloadURL} from "firebase/storage";
 
 const db = getFirestore();
+const storage = getStorage();
 
 export default {
     async updatePresenterList() {
         let presenterList = [];
-        let orderList = {};
+        let orderObject = {};
         const orderSnapshot = await getDocs(collection(db, "order"));
         orderSnapshot.forEach((doc) => {
-            orderList[doc.data().id] = parseInt(doc.id);
+            orderObject[doc.data().id] = parseInt(doc.id);
         });
+
+        const urlObject = {};
+        const filesSnapshot = await listAll(ref(storage, "files"));
+        for (const imgRef of filesSnapshot.items) {
+            urlObject[imgRef.name] = await getDownloadURL(imgRef);
+        }
 
         const snapshot = await getDocs(collection(db, "presenter"));
         snapshot.forEach((doc) => {
-            presenterList.push({id: parseInt(doc.id), title: doc.data().title, order: orderList[doc.id]});
+            presenterList.push({
+                id: parseInt(doc.id),
+                imageURL: urlObject[doc.id] || "",
+                title: doc.data().title,
+                order: orderObject[doc.id]
+            });
         });
 
         presenterList.sort((a, b) => a.order - b.order);
