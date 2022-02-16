@@ -56,8 +56,8 @@ import VModal from 'vue-js-modal'
 import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
-import {getStorage, ref, uploadBytes, deleteObject} from "firebase/storage";
-import {remove, ref as refD, getDatabase} from "firebase/database";
+import {getStorage, ref as storageRef, uploadBytes, deleteObject} from "firebase/storage";
+import {remove, ref, getDatabase} from "firebase/database";
 
 Vue.use(VModal, {componentName: 'modal'})
 const db = getFirestore();
@@ -153,10 +153,10 @@ export default {
       this.presenterList.push({id: maxId, imageURL: this.url, title: this.inputTitle, order: lastOrder});
 
       if (this.url !== "") {
-        const storageRef = ref(storage, "files/" + maxId);
+        const ref = storageRef(storage, "files/" + maxId);
         await new Promise((resolve) => {
           this.getFileBlob(this.url, blob => {
-            uploadBytes(storageRef, blob).then(() => resolve());
+            uploadBytes(ref, blob).then(() => resolve());
           });
         });
       }
@@ -168,8 +168,8 @@ export default {
         const results = [];
         results.push(deleteDoc(doc(db, "order", index.toString())));
         results.push(deleteDoc(doc(db, "presenter", this.deleteId.toString())));
-        results.push(deleteObject(ref(storage, "files/" + this.deleteId)).catch(() => false));
-        results.push(remove(refD(getDatabase(), "like-count/" + this.deleteId)));
+        results.push(deleteObject(storageRef(storage, "files/" + this.deleteId)).catch(() => false));
+        results.push(remove(ref(getDatabase(), "like-count/" + this.deleteId)));
         this.presenterList.splice(index, 1);
         await Promise.all(results);
 
