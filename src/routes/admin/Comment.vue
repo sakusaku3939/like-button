@@ -42,9 +42,9 @@ export default {
     sw.enableScroll();
     onValue(ref(db, "comments"), (snapshot) => {
       this.commentList = [];
-      snapshot.forEach((childSnapshot) => {
-        const val = childSnapshot.val();
-        this.commentList.push({id: childSnapshot.key, message: val.message, timestamp: val.timestamp});
+      snapshot.forEach((e) => {
+        const val = e.val();
+        this.commentList.push({id: e.key, message: val.message, timestamp: val.timestamp});
       });
       this.commentList = this.commentList.slice().reverse();
     });
