@@ -104,7 +104,7 @@ export default {
 
 <style scoped>
 #app {
-  margin: 64px 0;
+  margin: 112px 0;
 }
 
 h1 {
