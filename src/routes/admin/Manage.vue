@@ -53,6 +53,7 @@
 import Vue from "vue";
 import draggable from "vuedraggable";
 import VModal from 'vue-js-modal'
+import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
 import {getStorage, ref, uploadBytes, deleteObject} from "firebase/storage";
@@ -77,7 +78,11 @@ export default {
     },
   },
   created() {
+    sw.enableScroll();
     presenter.updatePresenterList().then((list) => this.presenterList = list);
+  },
+  destroyed() {
+    sw.disableScroll();
   },
   data() {
     return {

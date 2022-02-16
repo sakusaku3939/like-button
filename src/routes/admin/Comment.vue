@@ -32,12 +32,14 @@
 </template>
 
 <script>
+import sw from "../../common/switch-scroll.js"
 import {getDatabase, onValue, ref, remove} from "firebase/database";
 
 const db = getDatabase();
 
 export default {
   created() {
+    sw.enableScroll();
     onValue(ref(db, "comments"), (snapshot) => {
       this.commentList = [];
       snapshot.forEach((childSnapshot) => {
@@ -46,6 +48,9 @@ export default {
       });
       this.commentList = this.commentList.slice().reverse();
     });
+  },
+  destroyed() {
+    sw.disableScroll();
   },
   data() {
     return {

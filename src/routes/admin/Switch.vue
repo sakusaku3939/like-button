@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
 import {getDatabase, ref, set, get, child, onValue} from "firebase/database";
 
@@ -39,6 +40,7 @@ const db = getDatabase();
 
 export default {
   created() {
+    sw.enableScroll();
     onValue(ref(db, "current"), (snapshot) => {
       if (snapshot.exists()) {
         this.current = {id: snapshot.val().id, likeCount: snapshot.val().count}
@@ -61,6 +63,9 @@ export default {
         }
       });
     });
+  },
+  destroyed() {
+    sw.disableScroll();
   },
   data() {
     return {

@@ -23,6 +23,10 @@ const appHeight = () => {
 window.addEventListener('resize', appHeight);
 appHeight();
 
+window.onload = function () {
+
+}
+
 export default {
   created() {
     this.hostname = document.location.hostname;
@@ -46,6 +50,7 @@ export default {
 body {
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 #app {
