@@ -13,6 +13,7 @@
 
 <script>
 import config from "./config/firebase-config.js"
+import sw from "./common/switch-scroll.js"
 import {initializeApp} from 'firebase/app';
 
 initializeApp(config);
@@ -23,9 +24,7 @@ const appHeight = () => {
 window.addEventListener('resize', appHeight);
 appHeight();
 
-window.onload = function () {
-
-}
+sw.disableScroll();
 
 export default {
   created() {
@@ -50,7 +49,6 @@ export default {
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 #app {
