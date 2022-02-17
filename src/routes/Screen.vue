@@ -30,7 +30,7 @@ export default {
       renderer: 'svg',
       loop: false,
       autoplay: false,
-      path: 'https://assets7.lottiefiles.com/packages/lf20_5bd1qxgc.json'
+      path: 'https://assets5.lottiefiles.com/packages/lf20_5bd1qxgc.json'
     });
 
     let currentId;
