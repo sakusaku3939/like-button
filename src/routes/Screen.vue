@@ -115,7 +115,7 @@ export default {
   color: white;
   font-size: 72px;
   font-weight: bold;
-  animation: scroll 6s linear 1;
+  animation: scroll 8s linear 1;
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000,
   -1px 1px 0 #000, 1px -1px 0 #000,
   0 1px 0 #000, 0 -1px 0 #000,
