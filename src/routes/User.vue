@@ -15,7 +15,7 @@
     </div>
     <div class="bottom">
       <div class="comment">
-        <input v-model="text" class="comment-input" type="text" placeholder="匿名でコメントを送る (30文字)" maxlength="30"/>
+        <input v-model="text" class="comment-input" type="text" placeholder="コメントを送る (30文字まで)" maxlength="30"/>
         <i class="fas fa-paper-plane" @click="sendComment"></i>
       </div>
     </div>
