@@ -7,7 +7,7 @@ import Manage from "./routes/admin/Manage";
 import Switch from "./routes/admin/Switch";
 import Comment from "./routes/admin/Comment";
 import Login from "./routes/admin/Login";
-import {getAuth, onAuthStateChanged} from "firebase/auth";
+import {getAuth, onAuthStateChanged, signOut} from "firebase/auth";
 
 Vue.use(Router)
 
@@ -54,18 +54,18 @@ const router = new Router({
 })
 
 router.beforeEach((to, from, next) => {
-    const requiresAuth = to.matched.some(record => Object(record.meta).requireAuth);
-    if (requiresAuth) {
-        const auth = getAuth();
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                next();
-            } else {
-                next('/admin/login');
-            }
-        });
+    const auth = getAuth();
+    if (to.path === "/admin/logout") {
+        signOut(auth).then(() => next("/admin/login"));
     } else {
-        next();
+        const requiresAuth = to.matched.some(record => Object(record.meta).requireAuth);
+        if (requiresAuth) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) next(); else next('/admin/login');
+            });
+        } else {
+            next();
+        }
     }
 })
 
