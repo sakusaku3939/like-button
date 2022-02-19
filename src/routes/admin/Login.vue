@@ -1,6 +1,6 @@
 <template>
   <div id="#app">
-    <form class="form" @submit="login" action="" onsubmit="return false">
+    <form class="form" @submit.prevent="login" action="">
       <h2>管理者画面にログインする</h2>
       <input type="email" placeholder="メールアドレス" v-model="email" required>
       <input type="password" placeholder="パスワード" v-model="password" required>
