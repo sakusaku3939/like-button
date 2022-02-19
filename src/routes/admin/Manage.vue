@@ -145,7 +145,6 @@ export default {
       const lastOrder = this.presenterList.length;
       await setDoc(doc(db, "presenter", maxId.toString()), {
         title: this.inputTitle,
-        imageURL: "",
       }, {merge: true});
       await setDoc(doc(db, "order", lastOrder.toString()), {
         id: maxId,
