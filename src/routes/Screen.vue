@@ -44,17 +44,23 @@ export default {
     });
 
     let commentCount;
+    let isPreviousTop = false;
     onValue(ref(db, "comments"), (snapshot) => {
       if (commentCount !== undefined && commentCount < snapshot.size) {
         let i = 0;
         snapshot.forEach((e) => {
           if (i === snapshot.size - 1) {
             const topMin = 0;
-            const topMax = 20;
-            const bottomMin = 70;
-            const bottomMax = 90;
+            const topMax = 24;
+            const bottomMin = 68;
+            const bottomMax = 88;
 
-            const isTop = Math.floor(Math.random() * 2) === 0;
+            let isTop = Math.round(Math.random()) === 0;
+            if (isTop === isPreviousTop) {
+              isTop = Math.round(Math.random()) === 0;
+            }
+            isPreviousTop = isTop;
+
             const min = isTop ? topMin : bottomMin;
             const max = isTop ? topMax : bottomMax;
             const posY = Math.floor(Math.random() * (max + 1 - min)) + min;
