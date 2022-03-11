@@ -11,6 +11,7 @@
           }"
           v-text="comment.message"/>
     </div>
+    <div class="title">日本をPRする3DPVアニメーションを作る feat.初音ミク</div>
   </div>
 </template>
 
@@ -128,6 +129,15 @@ export default {
   -1px 0 0 #000, 1px 0 0 #000;
 }
 
+.title {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: 56px;
+  color: white;
+  margin: 8px;
+}
+
 @keyframes scroll {
   0% {
     transform: translateX(0)
@@ -144,6 +154,10 @@ export default {
 
   .comment-text {
     font-size: 32px;
+  }
+
+  .title {
+    font-size: 40px;
   }
 }
 </style>
