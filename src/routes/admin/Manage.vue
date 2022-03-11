@@ -57,10 +57,11 @@ import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
 import {getStorage, ref as storageRef, uploadBytes, deleteObject} from "firebase/storage";
-import {remove, ref, getDatabase} from "firebase/database";
+import {remove, ref, getDatabase, set} from "firebase/database";
 
 Vue.use(VModal, {componentName: 'modal'})
 const db = getFirestore();
+const database = getDatabase();
 const storage = getStorage();
 
 export default {
@@ -151,6 +152,10 @@ export default {
       }, {merge: true});
       this.presenterList.push({id: maxId, imageURL: this.url, title: this.inputTitle, order: lastOrder});
 
+      await set(ref(database, "like-count/" + maxId), {
+        count: 0,
+      });
+
       if (this.url !== "") {
         const ref = storageRef(storage, "files/" + maxId);
         await new Promise((resolve) => {
@@ -163,12 +168,13 @@ export default {
     },
     async deletePresenter() {
       let index = this.findIndex(this.deleteId);
+      this.hideDeleteModal();
       if (index !== -1) {
         const results = [];
         results.push(deleteDoc(doc(db, "order", index.toString())));
         results.push(deleteDoc(doc(db, "presenter", this.deleteId.toString())));
         results.push(deleteObject(storageRef(storage, "files/" + this.deleteId)).catch(() => false));
-        results.push(remove(ref(getDatabase(), "like-count/" + this.deleteId)));
+        results.push(remove(ref(database, "like-count/" + this.deleteId)));
         this.presenterList.splice(index, 1);
         await Promise.all(results);
 
@@ -177,7 +183,6 @@ export default {
           await deleteDoc(doc(db, "order", this.presenterList.length.toString()));
         }
       }
-      this.hideDeleteModal();
     },
     showAddModal() {
       this.$modal.show('add-presenter-modal');
