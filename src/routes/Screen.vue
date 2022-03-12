@@ -4,14 +4,14 @@
     <div id="lottie"></div>
     <div v-for="(comment, index) in this.commentList" :key="index">
       <span
-          class="comment-text"
+          class="comment-text border-text"
           :style="{
             top: `calc(var(--vh) * ${comment.posY})`,
             width: `${comment.message.length * 72}px`,
           }"
           v-text="comment.message"/>
     </div>
-    <div class="title">日本をPRする3DPVアニメーションを作る feat.初音ミク</div>
+    <div class="title border-text">{{ currentTitle }}</div>
   </div>
 </template>
 
@@ -42,6 +42,7 @@ export default {
       }
       getDownloadURL(storageRef(storage, "files/" + current.id)).then((url) => this.imageURL = url);
       currentId = current.id;
+      this.currentTitle = current.title;
     });
 
     let commentCount;
@@ -54,7 +55,7 @@ export default {
             const topMin = 0;
             const topMax = 24;
             const bottomMin = 68;
-            const bottomMax = 88;
+            const bottomMax = 80;
 
             let isTop = Math.round(Math.random()) === 0;
             if (isTop === isPreviousTop) {
@@ -77,6 +78,7 @@ export default {
   data() {
     return {
       imageURL: "",
+      currentTitle: "",
       commentList: [],
     };
   },
@@ -123,6 +125,9 @@ export default {
   font-size: 72px;
   font-weight: bold;
   animation: scroll 8s linear 1;
+}
+
+.border-text {
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000,
   -1px 1px 0 #000, 1px -1px 0 #000,
   0 1px 0 #000, 0 -1px 0 #000,

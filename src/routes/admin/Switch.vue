@@ -89,10 +89,12 @@ export default {
         });
       }
 
-      this.current.id = this.findById(this.presenterList, this.changeId).id;
+      const presenter = this.findById(this.presenterList, this.changeId);
+      this.current.id = presenter.id;
       this.current.likeCount = this.findById(this.likeCountList, this.changeId).likeCount;
       await set(ref(db, "current"), {
         id: this.current.id,
+        title: presenter.title,
         count: this.current.likeCount,
       });
 
