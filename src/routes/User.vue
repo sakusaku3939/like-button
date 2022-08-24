@@ -46,7 +46,7 @@ export default {
       renderer: 'svg',
       loop: false,
       autoplay: false,
-      path: 'https://assets8.lottiefiles.com/packages/lf20_9wcp0umd.json'
+      path: 'https://lottie.host/58003668-f02d-4728-9f4c-2a3f6dd45dc3/GiyNO5oXgO.json'
     });
   },
   methods: {

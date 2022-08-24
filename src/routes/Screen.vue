@@ -31,7 +31,7 @@ export default {
       renderer: 'svg',
       loop: false,
       autoplay: false,
-      path: 'https://assets5.lottiefiles.com/packages/lf20_5bd1qxgc.json'
+      path: 'https://lottie.host/129ab9bd-9710-452a-8baa-80250a322e82/cUU5i81gxy.json'
     });
 
     let currentId;
