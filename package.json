@@ -12,7 +12,7 @@
     "firebase": "^9.6.5",
     "glob-parent": "^5.1.2",
     "lottie-web": "^5.8.1",
-    "vue": "^2.6.11",
+    "vue": "^3.0.0",
     "vue-js-modal": "^2.0.1",
     "vue-router": "^3.5.3",
     "vuedraggable": "^2.24.3"
