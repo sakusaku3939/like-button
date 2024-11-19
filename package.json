@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "core-js": "^3.6.5",
-    "firebase": "^9.6.5",
+    "firebase": "^10.9.0",
     "glob-parent": "^5.1.2",
     "lottie-web": "^5.8.1",
     "vue": "^3.0.0",
