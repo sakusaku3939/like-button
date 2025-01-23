@@ -8,24 +8,25 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "core-js": "^3.6.5",
+    "core-js": "^3.40.0",
     "firebase": "^11.2.0",
-    "glob-parent": "^5.1.2",
-    "lottie-web": "^5.8.1",
-    "vue": "^3.0.0",
-    "vue-js-modal": "^2.0.1",
-    "vue-router": "^3.5.3",
+    "glob-parent": "^6.0.2",
+    "lottie-web": "^5.12.2",
+    "vue": "^3.5.13",
+    "vue-final-modal": "^4.5.5",
+    "vue-router": "^4.5.0",
     "vuedraggable": "^2.24.3"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "~5.0.8",
-    "@vue/cli-plugin-eslint": "~5.0.8",
-    "@vue/cli-service": "~5.0.8",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^6.8.0",
-    "eslint-plugin-vue": "^6.2.2",
-    "sweetalert": "^2.1.2",
-    "vue-template-compiler": "^2.6.11"
+    "@vue/cli-plugin-babel": "^5.0.8",
+    "@vue/cli-plugin-eslint": "^5.0.8",
+    "@vue/cli-service": "^5.0.8",
+    "@vue/compiler-sfc": "^3.5.13",
+    "@babel/eslint-parser": "^7.21.0",
+    "eslint": "^8.50.0",
+    "eslint-plugin-vue": "^9.32.0",
+    "eslint-webpack-plugin": "^4.0.2",
+    "sweetalert": "^2.1.2"
   },
   "eslintConfig": {
     "root": true,
@@ -33,11 +34,12 @@
       "node": true
     },
     "extends": [
-      "plugin:vue/essential",
+      "plugin:vue/vue3-essential",
       "eslint:recommended"
     ],
     "parserOptions": {
-      "parser": "babel-eslint"
+      "parser": "@babel/eslint-parser",
+      "requireConfigFile": false
     },
     "rules": {}
   },
