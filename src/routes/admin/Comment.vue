@@ -49,7 +49,7 @@ export default {
       this.commentList = this.commentList.slice().reverse();
     });
   },
-  destroyed() {
+  unmounted() {
     sw.disableScroll();
   },
   data() {
