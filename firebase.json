@@ -1,6 +1,6 @@
 {
-  "rulesFile": "database.rules.json",
   "hosting": {
+    "site": "jn-like-button",
     "public": "dist",
     "ignore": [
       "firebase.json",
