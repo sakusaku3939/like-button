@@ -2,6 +2,7 @@
 node_modules
 /dist
 .firebase
+src/config/firebase-config.js
 
 
 # local env files
