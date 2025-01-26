@@ -2,7 +2,7 @@
   <div id="app">
     <h1>発表者の追加・編集</h1>
 
-    <draggable tag="ul" :list="presenterList" class="list-group" handle=".handle" v-bind="dragOptions"
+    <VueDraggable tag="ul" :list="presenterList" class="list-group" handle=".handle" v-bind="dragOptions"
                @update="onUpdate">
       <li v-for="(element) in presenterList" :key="element.id">
         <i class="fas fa-bars handle"></i>
@@ -12,9 +12,9 @@
         <i class="fas fa-times remove" @click="deleteAt(element.id)"></i>
       </li>
       <i class="far fa-plus-square add" @click="showAddModal"></i>
-    </draggable>
+    </VueDraggable>
 
-    <modal name="add-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
+    <div v-if="showAddPresenterModal" class="modal-overlay">
       <form class="modal" @submit="addPresenter" onsubmit="return false">
         <h2>発表者を追加</h2>
         <input class="input-title" type="text" placeholder="発表タイトル" v-model="inputTitle" required>
@@ -34,39 +34,36 @@
           <input class="ok" type="submit" value="保存">
         </div>
       </form>
-    </modal>
+    </div>
 
-    <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
+    <div v-if="showDeletePresenterModal" class="modal-overlay">
       <form class="modal" @submit="deletePresenter" onsubmit="return false">
-        <p v-if="findIndex(deleteId) !== -1">{{ presenterList[findIndex(deleteId)].title }} を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="findIndex(deleteId) !== -1">{{ presenterList[findIndex(deleteId)]?.title ?? "不明な発表者" }} を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
         </div>
       </form>
-    </modal>
+    </div>
     <div class="ghost"></div> <!-- Ignore unused warning -->
   </div>
 </template>
 
 <script>
-import Vue from "vue";
-import draggable from "vuedraggable";
-import VModal from 'vue-js-modal'
+import { VueDraggable } from 'vue-draggable-plus'
 import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
 import {getStorage, ref as storageRef, uploadBytes, deleteObject} from "firebase/storage";
 import {remove, ref, getDatabase, set} from "firebase/database";
 
-Vue.use(VModal, {componentName: 'modal'})
 const db = getFirestore();
 const database = getDatabase();
 const storage = getStorage();
 
 export default {
   components: {
-    draggable,
+    VueDraggable
   },
   computed: {
     dragOptions() {
@@ -80,7 +77,9 @@ export default {
   },
   created() {
     sw.enableScroll();
-    presenter.updatePresenterList().then((list) => this.presenterList = list);
+    presenter.updatePresenterList().then((list) => {
+      this.presenterList = list
+    });
   },
   unmounted() {
     sw.disableScroll();
@@ -92,6 +91,8 @@ export default {
       inputTitle: "",
       url: "",
       fileErrorMessages: [],
+      showAddPresenterModal: false,
+      showDeletePresenterModal: false,
     };
   },
   methods: {
@@ -168,6 +169,10 @@ export default {
     },
     async deletePresenter() {
       let index = this.findIndex(this.deleteId);
+      if (index === null) {
+        console.error("削除対象の発表者が見つかりません");
+        return;
+      }
       this.hideDeleteModal();
       if (index !== -1) {
         const results = [];
@@ -185,19 +190,19 @@ export default {
       }
     },
     showAddModal() {
-      this.$modal.show('add-presenter-modal');
+      this.showAddPresenterModal = true;
     },
     hideAddModal() {
-      this.$modal.hide('add-presenter-modal');
+      this.showAddPresenterModal = false;
       this.inputTitle = "";
       this.removePreview();
     },
     deleteAt(id) {
       this.deleteId = id;
-      this.$modal.show('delete-presenter-modal');
+      this.showDeletePresenterModal = true;
     },
     hideDeleteModal() {
-      this.$modal.hide('delete-presenter-modal');
+      this.showDeletePresenterModal = false;
     },
   }
 };
@@ -302,6 +307,27 @@ i.add:hover {
   font-size: 16px;
   margin-top: 4px;
   padding: 0;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay > * {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 @media screen and (max-width: 1000px) {

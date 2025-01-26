@@ -1,4 +1,4 @@
-import { createApp } from 'vue'; // Vue 3用のAPI
+import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 
