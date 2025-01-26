@@ -15,7 +15,8 @@
     </div>
     <div class="bottom">
       <div class="comment">
-        <input v-model="text" class="comment-input" type="text" placeholder="コメントを送る (30文字まで)" maxlength="30"/>
+        <input v-model="text" class="comment-input" type="text" placeholder="コメントを送る (30文字まで)"
+               maxlength="30"/>
         <i class="fas fa-paper-plane" @click="sendComment"></i>
       </div>
     </div>
@@ -23,10 +24,16 @@
 </template>
 
 <script>
+import {inject} from 'vue'
 import lottie from "lottie-web";
 import {getDatabase, ref, push, update, increment, serverTimestamp} from "firebase/database";
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
+
+let updateCount = 0;
+const rateLimit = 1000;
+const interval = "600s";
+const $cookies = inject('$cookies');
 
 let animation;
 const db = getDatabase();
@@ -51,11 +58,24 @@ export default {
   },
   methods: {
     clickLikeButton() {
+      if (this.$cookies.isKey("rateLimit") === true) return;
+
       animation.playSegments([4, 60], true);
       update(ref(db, "current"), {count: increment(1)});
+
+      updateCount++;
+      if (updateCount >= rateLimit) {
+        this.$cookies.set("rateLimit", true, interval);
+      }
     },
     sendComment() {
       if (this.text === "") return;
+      if (this.$cookies.isKey("rateLimit") === true) return;
+
+      updateCount++;
+      if (this.updateCount >= rateLimit) {
+        $cookies.set("rateLimit", true, interval);
+      }
 
       const ng = decodeURIComponent(escape(window.atob(ngWord.text))).replace(/,/g, '|');
       if (RegExp(ng).test(this.text) || /^[A-Za-z]*$/.test(this.text)) {
