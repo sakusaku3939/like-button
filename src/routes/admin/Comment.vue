@@ -3,12 +3,14 @@
     <h1>コメント確認</h1>
 
     <table>
-      <tr>
-        <th class="small">ID</th>
-        <th>コメント内容</th>
-        <th class="medium">時間</th>
-        <th class="small"></th>
-      </tr>
+      <thead>
+        <tr>
+          <th class="small">ID</th>
+          <th>コメント内容</th>
+          <th class="medium">時間</th>
+          <th class="small"></th>
+        </tr>
+      </thead>
       <tr v-for="(element, index) in commentList" :key="element.id">
         <td>{{ commentList.length - index }}</td>
         <td>{{ element.message }}</td>
@@ -19,15 +21,16 @@
       </tr>
     </table>
 
-    <modal name="delete-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
+    <div v-if="deletePresenterModal" class="modal-overlay">
       <form class="modal" @submit="deleteComment" onsubmit="return false">
-        <p v-if="findIndex(deleteId) !== -1">{{ commentList[findIndex(deleteId)].message }} を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="findIndex(deleteId) !== -1">{{ commentList[findIndex(deleteId)].message }}
+          を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
         </div>
       </form>
-    </modal>
+    </div>
   </div>
 </template>
 
@@ -56,6 +59,7 @@ export default {
     return {
       commentList: [],
       deleteId: 0,
+      deletePresenterModal: false,
     };
   },
   methods: {
@@ -71,7 +75,7 @@ export default {
     },
     deleteAt(id) {
       this.deleteId = id;
-      this.$modal.show('delete-presenter-modal');
+      this.deletePresenterModal = true;
     },
     async deleteComment() {
       let index = this.findIndex(this.deleteId);
@@ -81,7 +85,7 @@ export default {
       this.hideDeleteModal();
     },
     hideDeleteModal() {
-      this.$modal.hide('delete-presenter-modal');
+      this.deletePresenterModal = false;
     },
   },
 }
@@ -135,6 +139,27 @@ table th.medium {
 
 .ok {
   background-color: #EF5350;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay > * {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 @media screen and (max-width: 1000px) {
