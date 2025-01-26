@@ -19,15 +19,15 @@
 
     <h2>現在の発表者: {{ findById(presenterList, current.id).title || "なし" }}</h2>
 
-    <modal name="change-presenter-modal" height="auto" :scrollable="true" :adaptive="true">
+    <div v-if="changePresenterModal" class="modal-overlay">
       <form class="modal" @submit="changePresenter" onsubmit="return false">
-        <p>発表者を {{ findById(presenterList, changeId).title }} に切り替えますか？</p>
+        <p>発表を「{{ findById(presenterList, changeId).title }}」に切り替えますか？</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideChangeModal">キャンセル</button>
           <input class="ok" type="submit" value="切り替える">
         </div>
       </form>
-    </modal>
+    </div>
   </div>
 </template>
 
@@ -73,6 +73,7 @@ export default {
       likeCountList: [],
       current: {id: undefined, likeCount: undefined},
       changeId: 0,
+      changePresenterModal: false,
     };
   },
   methods: {
@@ -102,10 +103,10 @@ export default {
     },
     changeAt(id) {
       this.changeId = id;
-      this.$modal.show('change-presenter-modal');
+      this.changePresenterModal = true;
     },
     hideChangeModal() {
-      this.$modal.hide('change-presenter-modal');
+      this.changePresenterModal = false;
     },
   }
 }
@@ -182,6 +183,27 @@ i.play {
 
 .title {
   font-size: 16px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay > * {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 

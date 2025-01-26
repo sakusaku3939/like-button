@@ -38,7 +38,7 @@
 
     <div v-if="showDeletePresenterModal" class="modal-overlay">
       <form class="modal" @submit="deletePresenter" onsubmit="return false">
-        <p v-if="findIndex(deleteId) !== -1">{{ presenterList[findIndex(deleteId)]?.title ?? "不明な発表者" }} を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="findIndex(deleteId) !== -1">「{{ presenterList[findIndex(deleteId)]?.title ?? "不明な発表" }}」を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
