@@ -25,10 +25,13 @@
 
 <script>
 import {inject} from 'vue'
+import {useStorage} from '@vueuse/core'
 import lottie from "lottie-web";
 import {getDatabase, ref, push, update, increment, serverTimestamp} from "firebase/database";
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
+
+const userId = useStorage('userId', Math.random().toString(32).substring(2));
 
 let updateCount = 0;
 const rateLimit = 1000;
@@ -78,7 +81,7 @@ export default {
       }
 
       const ng = decodeURIComponent(escape(window.atob(ngWord.text))).replace(/,/g, '|');
-      if (RegExp(ng).test(this.text) || /^[A-Za-z]*$/.test(this.text)) {
+      if (RegExp(ng).test(this.text)) {
         swal({
           text: "コメントの送信に失敗しました",
           icon: "error",
@@ -86,6 +89,7 @@ export default {
         });
       } else {
         push(ref(db, "comments"), {
+          userId: userId.value,
           message: this.text,
           timestamp: serverTimestamp(),
         }).then(() =>

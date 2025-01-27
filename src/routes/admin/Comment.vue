@@ -4,15 +4,17 @@
 
     <table>
       <thead>
-        <tr>
-          <th class="small">ID</th>
-          <th>コメント内容</th>
-          <th class="medium">時間</th>
-          <th class="small"></th>
-        </tr>
+      <tr>
+        <th class="small">ID</th>
+        <th class="medium">ユーザーID</th>
+        <th>コメント内容</th>
+        <th class="medium">時間</th>
+        <th class="small"></th>
+      </tr>
       </thead>
       <tr v-for="(element, index) in commentList" :key="element.id">
         <td>{{ commentList.length - index }}</td>
+        <td>{{ element.userId }}</td>
         <td>{{ element.message }}</td>
         <td>{{ formatDate(element.timestamp) }}</td>
         <td>
@@ -23,7 +25,9 @@
 
     <div v-if="deletePresenterModal" class="modal-overlay">
       <form class="modal" @submit="deleteComment" onsubmit="return false">
-        <p v-if="findIndex(deleteId) !== -1">「{{ commentList[findIndex(deleteId)].message }}」を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="findIndex(deleteId) !== -1">「{{
+            commentList[findIndex(deleteId)].message
+          }}」を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
@@ -46,7 +50,7 @@ export default {
       this.commentList = [];
       snapshot.forEach((e) => {
         const val = e.val();
-        this.commentList.push({id: e.key, message: val.message, timestamp: val.timestamp});
+        this.commentList.push({id: e.key, userId: val.userId, message: val.message, timestamp: val.timestamp});
       });
       this.commentList = this.commentList.slice().reverse();
     });
