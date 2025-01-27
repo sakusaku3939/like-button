@@ -10,6 +10,7 @@
         <th>コメント内容</th>
         <th class="medium">時間</th>
         <th class="small"></th>
+        <th class="small"></th>
       </tr>
       </thead>
       <tr v-for="(element, index) in commentList" :key="element.id">
@@ -18,12 +19,18 @@
         <td>{{ element.message }}</td>
         <td>{{ formatDate(element.timestamp) }}</td>
         <td>
+          <button v-if="blockUserIds.includes(element.userId)" class="unblock" @click="unblockUser(element.userId)">
+            解除
+          </button>
+          <button v-else class="block" @click="blockAt(element.userId)">ブロック</button>
+        </td>
+        <td>
           <button class="delete" @click="deleteAt(element.id)">削除</button>
         </td>
       </tr>
     </table>
 
-    <div v-if="deletePresenterModal" class="modal-overlay">
+    <div v-if="deleteCommentModal" class="modal-overlay">
       <form class="modal" @submit="deleteComment" onsubmit="return false">
         <p v-if="findIndex(deleteId) !== -1">「{{
             commentList[findIndex(deleteId)].message
@@ -34,12 +41,22 @@
         </div>
       </form>
     </div>
+
+    <div v-if="blockUserModal" class="modal-overlay">
+      <form class="modal" @submit="blockUser" onsubmit="return false">
+        <p>ユーザー「{{ blockUserId }}」をブロックして、今後のコメントを全て非表示にしますか</p>
+        <div class="form-button-group">
+          <button class="cancel" type="button" @click="hideBlockModal">キャンセル</button>
+          <input class="ok" type="submit" value="ブロック">
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
 <script>
 import sw from "../../common/switch-scroll.js"
-import {getDatabase, onValue, ref, remove} from "firebase/database";
+import {getDatabase, onValue, ref, remove, set} from "firebase/database";
 
 const db = getDatabase();
 
@@ -50,9 +67,22 @@ export default {
       this.commentList = [];
       snapshot.forEach((e) => {
         const val = e.val();
-        this.commentList.push({id: e.key, userId: val.userId, message: val.message, timestamp: val.timestamp});
+        this.commentList.push({
+          id: e.key,
+          userId: val.userId,
+          message: val.message,
+          timestamp: val.timestamp,
+        });
       });
       this.commentList = this.commentList.slice().reverse();
+    });
+    onValue(ref(db, "block-users"), (snapshot) => {
+      this.blockUserIds = [];
+      snapshot.forEach((e) => {
+        if (e.val().state === true) {
+          this.blockUserIds.push(e.key);
+        }
+      });
     });
   },
   unmounted() {
@@ -61,8 +91,11 @@ export default {
   data() {
     return {
       commentList: [],
+      blockUserIds: [],
       deleteId: 0,
-      deletePresenterModal: false,
+      deleteCommentModal: false,
+      blockUserId: "",
+      blockUserModal: false,
     };
   },
   methods: {
@@ -78,7 +111,7 @@ export default {
     },
     deleteAt(id) {
       this.deleteId = id;
-      this.deletePresenterModal = true;
+      this.deleteCommentModal = true;
     },
     async deleteComment() {
       let index = this.findIndex(this.deleteId);
@@ -88,7 +121,23 @@ export default {
       this.hideDeleteModal();
     },
     hideDeleteModal() {
-      this.deletePresenterModal = false;
+      this.deleteCommentModal = false;
+    },
+    blockAt(userId) {
+      this.blockUserId = userId;
+      this.blockUserModal = true;
+    },
+    hideBlockModal() {
+      this.blockUserModal = false;
+    },
+    async blockUser() {
+      await set(ref(db, "block-users/" + this.blockUserId), {
+        state: true,
+      });
+      this.hideBlockModal();
+    },
+    async unblockUser(userId) {
+      await remove(ref(db, "block-users/" + userId));
     },
   },
 }
@@ -130,6 +179,32 @@ table th.medium {
 .delete {
   color: white;
   background-color: #EF5350;
+  border-radius: 8px;
+  padding: 0;
+  width: 90%;
+  height: 32px;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+}
+
+.block {
+  color: white;
+  background-color: #FFA726;
+  border-radius: 8px;
+  padding: 0;
+  width: 90%;
+  height: 32px;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+}
+
+.unblock {
+  color: white;
+  background-color: #4CAF50;
   border-radius: 8px;
   padding: 0;
   width: 90%;

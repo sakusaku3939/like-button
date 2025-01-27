@@ -27,7 +27,7 @@
 import {inject} from 'vue'
 import {useStorage} from '@vueuse/core'
 import lottie from "lottie-web";
-import {getDatabase, ref, push, update, increment, serverTimestamp} from "firebase/database";
+import {getDatabase, ref, push, update, increment, serverTimestamp, onValue, get, child} from "firebase/database";
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
 
@@ -80,25 +80,38 @@ export default {
         $cookies.set("rateLimit", true, interval);
       }
 
+      const submitText = this.text;
+
       const ng = decodeURIComponent(escape(window.atob(ngWord.text))).replace(/,/g, '|');
-      if (RegExp(ng).test(this.text)) {
+      if (RegExp(ng).test(submitText)) {
         swal({
           text: "コメントの送信に失敗しました",
           icon: "error",
           button: false,
         });
       } else {
-        push(ref(db, "comments"), {
-          userId: userId.value,
-          message: this.text,
-          timestamp: serverTimestamp(),
-        }).then(() =>
+        get(ref(db, "block-users")).then((snapshot) => {
+          if (snapshot.hasChild(userId.value)) {
             swal({
-              text: "コメントが送信されました",
-              icon: "success",
+              text: "コメントの送信に失敗しました",
+              icon: "error",
               button: false,
-            })
-        );
+            });
+            return;
+          }
+
+          push(ref(db, "comments"), {
+            userId: userId.value,
+            message: submitText,
+            timestamp: serverTimestamp(),
+          }).then(() =>
+              swal({
+                text: "コメントが送信されました",
+                icon: "success",
+                button: false,
+              })
+          );
+        });
       }
       this.text = "";
     },
