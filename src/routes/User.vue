@@ -31,7 +31,7 @@ import {getDatabase, ref, push, update, increment, serverTimestamp} from "fireba
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
 
-const userId = useStorage('userId', Math.random().toString(32).substring(2));
+const userId = useStorage('managedKey', Math.random().toString(32).substring(2));
 
 let updateCount = 0;
 const rateLimit = 1000;
