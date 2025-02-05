@@ -3,11 +3,12 @@
     <h1>発表者の追加・編集</h1>
 
     <VueDraggable tag="ul" :list="presenterList" class="list-group" handle=".handle" v-bind="dragOptions"
-               @update="onUpdate">
+                  @update="onUpdate">
       <li v-for="(element) in presenterList" :key="element.id">
         <i class="fas fa-bars handle"></i>
         <img class="image" v-if="element.imageURL" :src="element.imageURL" alt="">
         <div class="image dummy" v-else/>
+        <i class="fas fa-pencil-alt handle" @click="showEditModal(element.id)"></i>
         <span class="title">{{ element.title }}</span>
         <i class="fas fa-times remove" @click="deleteAt(element.id)"></i>
       </li>
@@ -36,9 +37,33 @@
       </form>
     </div>
 
+    <div v-if="showEditPresenterModal" class="modal-overlay">
+      <form class="modal" @submit="editPresenter" onsubmit="return false">
+        <h2>発表者を編集</h2>
+        <input class="input-title" type="text" placeholder="発表タイトル" v-model="inputTitle" required>
+        <div style="margin: 8px 0">サムネイル画像</div>
+        <input type="file" ref="preview" @change="uploadFile" accept="image/jpeg, image/png">
+        <div class="preview" v-show="url">
+          <div class="delete-button" @click="removePreview"><i class="fas fa-times"></i></div>
+          <img :src="url" alt="">
+        </div>
+        <ul v-show="fileErrorMessages.length > 0" class="error-messages">
+          <li v-for="(message, index) in fileErrorMessages" :key="index">
+            {{ message }}
+          </li>
+        </ul>
+        <div class="form-button-group">
+          <button class="cancel" type="button" @click="hideEditModal">キャンセル</button>
+          <input class="ok" type="submit" value="保存">
+        </div>
+      </form>
+    </div>
+
     <div v-if="showDeletePresenterModal" class="modal-overlay">
       <form class="modal" @submit="deletePresenter" onsubmit="return false">
-        <p v-if="findIndex(deleteId) !== -1">「{{ presenterList[findIndex(deleteId)]?.title ?? "不明な発表" }}」を削除しますか？この操作は元に戻せません。</p>
+        <p v-if="findIndex(deleteId) !== -1">「{{
+            presenterList[findIndex(deleteId)]?.title ?? "不明な発表"
+          }}」を削除しますか？この操作は元に戻せません。</p>
         <div class="form-button-group">
           <button class="cancel" type="button" @click="hideDeleteModal">キャンセル</button>
           <input class="ok" type="submit" value="削除">
@@ -50,7 +75,7 @@
 </template>
 
 <script>
-import { VueDraggable } from 'vue-draggable-plus'
+import {VueDraggable} from 'vue-draggable-plus'
 import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
@@ -88,10 +113,12 @@ export default {
     return {
       presenterList: [],
       deleteId: 0,
+      editId: 0,
       inputTitle: "",
       url: "",
       fileErrorMessages: [],
       showAddPresenterModal: false,
+      showEditPresenterModal: false,
       showDeletePresenterModal: false,
     };
   },
@@ -167,6 +194,29 @@ export default {
       }
       this.hideAddModal();
     },
+    async editPresenter() {
+      let index = this.findIndex(this.editId);
+      if (index === null || index === -1) {
+        console.error("編集対象の発表者が見つかりません");
+        return;
+      }
+      if (this.inputTitle.length > 0) {
+        await setDoc(doc(db, "presenter", this.editId.toString()), {
+          title: this.inputTitle,
+        }, {merge: true});
+        this.presenterList[index].title = this.inputTitle;
+      }
+
+      if (this.url !== "") {
+        const ref = storageRef(storage, "files/" + this.editId);
+        await new Promise((resolve) => {
+          this.getFileBlob(this.url, blob => {
+            uploadBytes(ref, blob).then(() => resolve());
+          });
+        });
+      }
+      this.hideEditModal();
+    },
     async deletePresenter() {
       let index = this.findIndex(this.deleteId);
       if (index === null) {
@@ -194,6 +244,17 @@ export default {
     },
     hideAddModal() {
       this.showAddPresenterModal = false;
+      this.inputTitle = "";
+      this.removePreview();
+    },
+    showEditModal(id) {
+      this.editId = id;
+      this.showEditPresenterModal = true;
+      this.inputTitle = this.presenterList[this.findIndex(id)].title;
+      this.url = this.presenterList[this.findIndex(id)].imageURL;
+    },
+    hideEditModal() {
+      this.showEditPresenterModal = false;
       this.inputTitle = "";
       this.removePreview();
     },
