@@ -104,10 +104,11 @@ export default {
     },
   },
   created() {
+    const loader = loading.show();
     sw.enableScroll();
     presenter.updatePresenterList().then((list) => {
       this.presenterList = list
-    });
+    }).finally(() => loader.hide());
   },
   unmounted() {
     sw.disableScroll();
@@ -169,6 +170,7 @@ export default {
       xhr.send();
     },
     async addPresenter() {
+      const loader = loading.show();
       let maxId = -1;
       const snapshot = await getDocs(collection(db, "presenter"));
       snapshot.forEach((doc) => maxId = Math.max(maxId, parseInt(doc.id)));
@@ -195,6 +197,7 @@ export default {
           });
         });
       }
+      loader.hide();
       this.hideAddModal();
     },
     async editPresenter() {

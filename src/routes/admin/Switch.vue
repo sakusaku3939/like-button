@@ -35,11 +35,14 @@
 import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
 import {getDatabase, ref, set, get, child, onValue} from "firebase/database";
+import {useLoading} from "vue-loading-overlay";
 
 const db = getDatabase();
+const loading = useLoading();
 
 export default {
   created() {
+    const loader = loading.show();
     sw.enableScroll();
     onValue(ref(db, "current"), (snapshot) => {
       if (snapshot.exists()) {
@@ -62,6 +65,7 @@ export default {
           });
         }
       });
+      loader.hide();
     });
   },
   unmounted() {

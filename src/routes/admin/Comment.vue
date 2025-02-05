@@ -57,11 +57,14 @@
 <script>
 import sw from "../../common/switch-scroll.js"
 import {getDatabase, onValue, ref, remove, set} from "firebase/database";
+import {useLoading} from "vue-loading-overlay";
 
 const db = getDatabase();
+const loading = useLoading()
 
 export default {
   created() {
+    const loader = loading.show();
     sw.enableScroll();
     onValue(ref(db, "comments"), (snapshot) => {
       this.commentList = [];
@@ -75,6 +78,7 @@ export default {
         });
       });
       this.commentList = this.commentList.slice().reverse();
+      loader.hide();
     });
     onValue(ref(db, "block-users"), (snapshot) => {
       this.blockUserIds = [];
