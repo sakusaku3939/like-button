@@ -13,6 +13,7 @@
         <i class="fas fa-times remove" @click="deleteAt(element.id)"></i>
       </li>
       <i class="far fa-plus-square add" @click="showAddModal"></i>
+      <div style="padding-bottom: 40px"/>
     </VueDraggable>
 
     <div v-if="showAddPresenterModal" class="modal-overlay">

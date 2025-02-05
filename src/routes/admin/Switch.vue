@@ -18,6 +18,7 @@
     </ul>
 
     <h2>現在の発表者: {{ findById(presenterList, current.id).title || "なし" }}</h2>
+    <div style="padding-bottom: 40px"/>
 
     <div v-if="changePresenterModal" class="modal-overlay">
       <form class="modal" @submit="changePresenter" onsubmit="return false">
