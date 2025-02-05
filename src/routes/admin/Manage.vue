@@ -81,10 +81,13 @@ import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
 import {getStorage, ref as storageRef, uploadBytes, deleteObject} from "firebase/storage";
 import {remove, ref, getDatabase, set} from "firebase/database";
+import {useLoading} from 'vue-loading-overlay'
 
 const db = getFirestore();
 const database = getDatabase();
 const storage = getStorage();
+
+const loading = useLoading();
 
 export default {
   components: {
@@ -200,6 +203,7 @@ export default {
         console.error("編集対象の発表者が見つかりません");
         return;
       }
+      const loader = loading.show();
       if (this.inputTitle.length > 0) {
         await setDoc(doc(db, "presenter", this.editId.toString()), {
           title: this.inputTitle,
@@ -214,7 +218,12 @@ export default {
             uploadBytes(ref, blob).then(() => resolve());
           });
         });
+        this.presenterList[index].imageURL = this.url;
+      } else {
+        await deleteObject(storageRef(storage, "files/" + this.editId)).catch(() => false);
+        this.presenterList[index].imageURL = "";
       }
+      loader.hide();
       this.hideEditModal();
     },
     async deletePresenter() {
