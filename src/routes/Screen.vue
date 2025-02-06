@@ -40,7 +40,11 @@ export default {
       if (currentId !== undefined && currentId === current.id) {
         animation.playSegments([4, 60], true);
       }
-      getDownloadURL(storageRef(storage, "files/" + current.id)).then((url) => this.imageURL = url);
+      getDownloadURL(storageRef(storage, "files/" + current.id))
+          .then((url) => this.imageURL = url)
+          .catch(() => {
+            this.imageURL = ""
+          });
       currentId = current.id;
       this.currentTitle = current.title;
     });
