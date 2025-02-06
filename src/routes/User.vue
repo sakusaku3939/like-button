@@ -16,7 +16,7 @@
     <div class="bottom">
       <div class="comment">
         <input v-model="text" class="comment-input" type="text" placeholder="コメントを送る (50文字まで)"
-               maxlength="50"/>
+               maxlength="50" @keyup.enter="sendComment"/>
         <i class="fas fa-paper-plane" @click="sendComment"></i>
       </div>
     </div>
