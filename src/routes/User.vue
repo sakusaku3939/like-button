@@ -16,7 +16,7 @@
     <div class="bottom">
       <div class="comment">
         <input v-model="text" class="comment-input" type="text" placeholder="コメントを送る (50文字まで)"
-               maxlength="50" @keyup.enter="sendComment">
+               maxlength="50" @keydown="handleEnter">
         <i class="fas fa-paper-plane" @click="sendComment"></i>
       </div>
     </div>
@@ -71,6 +71,12 @@ export default {
         this.$cookies.set("rateLimit", true, interval);
       }
     },
+    handleEnter() {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        this.sendComment();
+      }
+    },
     sendComment() {
       if (this.text === "") return;
       if (this.$cookies.isKey("rateLimit") === true) return;
@@ -114,8 +120,8 @@ export default {
         });
       }
       this.text = "";
-    },
-  }
+    }
+  },
 }
 </script>
 
