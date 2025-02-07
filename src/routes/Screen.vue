@@ -11,6 +11,11 @@
           }"
           v-text="comment.message"/>
     </div>
+    <div class="comment-history">
+      <div class="comment-text border-text" v-for="(comment, index) in this.commentHistory" :key="index"
+           v-text="comment.message">
+      </div>
+    </div>
     <div class="title border-text">{{ currentTitle }}</div>
   </div>
 </template>
@@ -52,6 +57,9 @@ export default {
     let commentCount;
     let isPreviousTop = false;
     onValue(ref(db, "comments"), (snapshot) => {
+      this.commentHistory = Object.values(snapshot.val());
+      this.commentHistory = this.commentHistory.slice().reverse();
+
       if (commentCount !== undefined && commentCount < snapshot.size) {
         let i = 0;
         snapshot.forEach((e) => {
@@ -84,6 +92,7 @@ export default {
       imageURL: "",
       currentTitle: "",
       commentList: [],
+      commentHistory: [],
     };
   },
 }
@@ -136,6 +145,25 @@ export default {
   -1px 1px 0 #000, 1px -1px 0 #000,
   0 1px 0 #000, 0 -1px 0 #000,
   -1px 0 0 #000, 1px 0 0 #000;
+}
+
+.comment-history {
+  display: flex;
+  flex-direction: column-reverse;
+  position: absolute;
+  top: 0;
+  left: 8px;
+  width: 100%;
+  height: calc(var(--vh) * 100);
+  overflow: hidden;
+}
+
+.comment-history .comment-text {
+  position: relative;
+  display: block;
+  padding-left: 0;
+  font-size: 16px;
+  animation: none;
 }
 
 .title {
