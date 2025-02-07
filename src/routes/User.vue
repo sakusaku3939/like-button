@@ -34,7 +34,7 @@ import ngWord from "../config/ng-word.js"
 const userId = useStorage('managedKey', Math.random().toString(32).substring(2));
 
 let updateCount = 0;
-const rateLimit = 500;
+const rateLimit = 300;
 const interval = "600s";
 const $cookies = inject('$cookies');
 
