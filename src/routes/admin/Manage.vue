@@ -2,19 +2,22 @@
   <div id="app">
     <h1>発表者の追加・編集</h1>
 
-    <VueDraggable tag="ul" :list="presenterList" class="list-group" handle=".handle" v-bind="dragOptions"
-                  @update="onUpdate">
-      <li v-for="(element) in presenterList" :key="element.id">
-        <i class="fas fa-bars handle"></i>
-        <img class="image" v-if="element.imageURL" :src="element.imageURL" alt="">
-        <div class="image dummy" v-else/>
-        <i class="fas fa-pencil-alt handle" @click="showEditModal(element.id)"></i>
-        <span class="title">{{ element.title }}</span>
-        <i class="fas fa-times remove" @click="deleteAt(element.id)"></i>
-      </li>
-      <i class="far fa-plus-square add" @click="showAddModal"></i>
-      <div style="padding-bottom: 40px"/>
-    </VueDraggable>
+    <draggable tag="ul" :list="presenterList" class="list-group" handle=".handle" v-bind="dragOptions"
+               @end="onUpdate" item-key="id">
+      <template #item="{ element }">
+        <li>
+          <i class="fas fa-bars handle"></i>
+          <img class="image" v-if="element.imageURL" :src="element.imageURL" alt="">
+          <div class="image dummy" v-else/>
+          <i class="fas fa-pencil-alt handle" @click="showEditModal(element.id)"></i>
+          <span class="title">{{ element.title }}</span>
+          <i class="fas fa-times remove" @click="deleteAt(element.id)"></i>
+        </li>
+      </template>
+    </draggable>
+
+    <i class="far fa-plus-square add" @click="showAddModal"></i>
+    <div style="padding-bottom: 40px"/>
 
     <div v-if="showAddPresenterModal" class="modal-overlay">
       <form class="modal" @submit="addPresenter" onsubmit="return false">
@@ -76,7 +79,7 @@
 </template>
 
 <script>
-import {VueDraggable} from 'vue-draggable-plus'
+import draggable from 'vuedraggable'
 import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
 import {getFirestore, doc, setDoc, getDocs, deleteDoc, collection} from "firebase/firestore";
@@ -92,7 +95,7 @@ const loading = useLoading();
 
 export default {
   components: {
-    VueDraggable
+    draggable
   },
   computed: {
     dragOptions() {

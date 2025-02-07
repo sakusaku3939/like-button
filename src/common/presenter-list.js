@@ -1,4 +1,4 @@
-import {collection, doc, getDocs, getFirestore, setDoc} from "firebase/firestore";
+import {collection, deleteDoc, doc, getDocs, getFirestore, setDoc} from "firebase/firestore";
 import {getStorage, ref, listAll, getDownloadURL} from "firebase/storage";
 
 const db = getFirestore();
@@ -39,6 +39,12 @@ export default {
         presenterList.map(function (list, index) {
             list.order = index;
         });
+
+        const orderCollection = collection(db, "order");
+        const orderDocs = await getDocs(orderCollection);
+        const deletePromises = orderDocs.docs.map((doc) => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+
         presenterList.forEach((list) => {
             results.push(
                 setDoc(doc(db, "order", list.order.toString()), {
