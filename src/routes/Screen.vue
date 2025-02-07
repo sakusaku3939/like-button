@@ -50,9 +50,6 @@ export default {
           .catch(() => {
             this.imageURL = ""
           });
-      if (currentId !== current.id) {
-        this.commentHistory = [];
-      }
       currentId = current.id;
       this.currentTitle = current.title;
     });
@@ -60,6 +57,9 @@ export default {
     let commentCount;
     let isPreviousTop = false;
     onValue(ref(db, "comments"), (snapshot) => {
+      this.commentHistory = Object.values(snapshot.val());
+      this.commentHistory = this.commentHistory.slice().reverse();
+
       if (commentCount !== undefined && commentCount < snapshot.size) {
         let i = 0;
         snapshot.forEach((e) => {
@@ -80,7 +80,6 @@ export default {
             const posY = Math.floor(Math.random() * (max + 1 - min)) + min;
 
             this.commentList.push({message: e.val().message, posY: posY});
-            this.commentHistory.push(e.val());
           }
           i++;
         });
