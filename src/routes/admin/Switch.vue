@@ -3,7 +3,6 @@
     <h1>発表者を切り替える</h1>
 
     <h2>現在の発表者: {{ findById(presenterList, current.id).title || "なし" }}</h2>
-    <div style="padding-bottom: 40px"/>
 
     <ul class="list-group">
       <li v-for="(element) in presenterList" :key="element.id" @click="changeAt(element.id)">
@@ -19,6 +18,8 @@
         </div>
       </li>
     </ul>
+
+    <div style="padding-bottom: 40px"/>
 
     <div v-if="changePresenterModal" class="modal-overlay">
       <form class="modal" @submit="changePresenter" onsubmit="return false">
