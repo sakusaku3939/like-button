@@ -376,6 +376,7 @@ i.add:hover {
 
 .preview img {
   width: 100%;
+  max-height: 60vh;
   margin-top: 4px;
 }
 
