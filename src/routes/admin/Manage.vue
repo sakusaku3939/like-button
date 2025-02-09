@@ -112,7 +112,14 @@ export default {
     sw.enableScroll();
     presenter.updatePresenterList().then((list) => {
       this.presenterList = list
-    }).finally(() => loader.hide());
+      loader.hide()
+
+      presenter.getDownloadUrlObjects().then(async (urlObject) => {
+        for (const e of this.presenterList) {
+          e.imageURL = await urlObject[e.id];
+        }
+      });
+    });
   },
   unmounted() {
     sw.disableScroll();

@@ -50,8 +50,10 @@ export default {
         this.current = {id: snapshot.val().id, likeCount: snapshot.val().count}
       }
     });
+
     presenter.updatePresenterList().then((list) => {
       this.presenterList = list;
+
       get(child(ref(db), "like-count")).then((snapshot) => {
         if (snapshot.exists()) {
           snapshot.forEach((e) => {
@@ -67,6 +69,12 @@ export default {
         }
       });
       loader.hide();
+
+      presenter.getDownloadUrlObjects().then(async (urlObject) => {
+        for (const e of this.presenterList) {
+          e.imageURL = await urlObject[e.id];
+        }
+      });
     });
   },
   unmounted() {
