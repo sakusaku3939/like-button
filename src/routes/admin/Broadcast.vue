@@ -61,7 +61,7 @@ export default {
   data() {
     return {
       localStream: null,
-      peerConnection: null,
+      peerConnections: {}, // viewerId -> RTCPeerConnection
       cameraStarted: false,
       broadcasting: false,
       connectionStatus: "未接続",
@@ -104,52 +104,21 @@ export default {
       }
 
       try {
-        // WebRTC PeerConnection作成
-        this.peerConnection = new RTCPeerConnection(rtcConfiguration);
-
-        // ローカルストリームを追加
-        this.localStream.getTracks().forEach((track) => {
-          this.peerConnection.addTrack(track, this.localStream);
-        });
-
         // ルーム初期化
         const roomRef = ref(database, `room`);
         await set(roomRef, {
           broadcaster: true,
           status: "live",
           started: Date.now(),
-          offer: null,
-          answer: null,
         });
-        await set(ref(database, `room/offerCandidates`), null);
-        await set(ref(database, `room/answerCandidates`), null);
-
-        // ICE候補の収集（配信者 → 視聴者）
-        this.peerConnection.onicecandidate = async (event) => {
-          if (event.candidate) {
-            const candidatesRef = ref(database, `room/offerCandidates`);
-            await push(candidatesRef, {
-              candidate: event.candidate.toJSON(),
-              timestamp: Date.now(),
-            });
-          }
-        };
-
-        this.peerConnection.onconnectionstatechange = () => {
-          this.connectionStatus = this.peerConnection.connectionState;
-        };
-
-        this.peerConnection.oniceconnectionstatechange = () => {
-        };
-
-        // Answerの監視を開始
-        this.listenForAnswer().then();
+        await set(ref(database, `room/signaling`), null);
+        await set(ref(database, `room/requests`), null);
 
         // 視聴者監視開始
         this.listenForViewers();
 
-        // Answer候補監視開始（視聴者 → 配信者）
-        this.listenForAnswerCandidates();
+        // 視聴者の join 要求を監視し、viewer ごとに PeerConnection を作成
+        this.listenForJoinRequests();
 
         this.broadcasting = true;
         this.connectionStatus = "視聴者待ち";
@@ -161,47 +130,82 @@ export default {
       }
     },
 
-    async listenForAnswer() {
-      const answerRef = ref(database, `room/answer`);
+    listenForJoinRequests() {
+      const reqRef = ref(database, `room/requests`);
+
+      const unsubscribe = onValue(reqRef, async (snapshot) => {
+        const requests = snapshot.val() || {};
+        Object.keys(requests).forEach((viewerId) => {
+          if (requests[viewerId]?.type === "join-request") {
+            if (!this.peerConnections[viewerId]) {
+              this.createPeerForViewer(viewerId);
+            }
+          }
+        });
+      });
+
+      this.listeners.push(unsubscribe);
+    },
+
+    async createPeerForViewer(viewerId) {
+      const pc = new RTCPeerConnection(rtcConfiguration);
+      this.localStream.getTracks().forEach((track) => {
+        pc.addTrack(track, this.localStream);
+      });
+
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "connected") {
+          this.connectionStatus = "配信中";
+        }
+      };
+
+      pc.onicecandidate = async (event) => {
+        if (event.candidate) {
+          const candidatesRef = ref(database, `room/signaling/${viewerId}/offerCandidates`);
+          await push(candidatesRef, {
+            candidate: event.candidate.toJSON(),
+            timestamp: Date.now(),
+          });
+        }
+      };
+
+      this.peerConnections[viewerId] = pc;
+
+      try {
+        // viewer ごとのシグナリング領域を初期化
+        await set(ref(database, `room/signaling/${viewerId}`), null);
+
+        // Offer を作成して保存
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        await set(ref(database, `room/signaling/${viewerId}/offer`), {
+          type: offer.type,
+          sdp: offer.sdp,
+          timestamp: Date.now(),
+        });
+
+        // Answer と Answer 候補を監視
+        this.listenForViewerAnswer(viewerId);
+        this.listenForViewerAnswerCandidates(viewerId);
+      } catch (e) {
+        console.error("Offer作成エラー:", e);
+      }
+    },
+
+    listenForViewerAnswer(viewerId) {
+      const answerRef = ref(database, `room/signaling/${viewerId}/answer`);
 
       const unsubscribe = onValue(answerRef, async (snapshot) => {
         const answerData = snapshot.val();
-
-        if (answerData && answerData.type && answerData.type !== "join-request") {
-          console.log("Answer受信:", answerData);
-
+        if (answerData && answerData.type) {
           try {
-            // Remote descriptionを毎回セット
-            await this.peerConnection.setRemoteDescription(
+            await this.peerConnections[viewerId]?.setRemoteDescription(
                 new RTCSessionDescription(answerData)
             );
-
-            console.log("Answer設定完了");
+            console.log(`Answer設定完了 viewerId=${viewerId}`);
           } catch (error) {
             console.error("Answer設定エラー:", error);
-          }
-        } else if (answerData && answerData.type === "join-request") {
-          console.log("視聴者参加要求受信");
-
-          // 新しい視聴者に対応するため、古い Offer/候補をクリアしてから Offer 作成
-          try {
-            await set(ref(database, `room/offer`), null);
-            await set(ref(database, `room/offerCandidates`), null);
-
-            const offer = await this.peerConnection.createOffer();
-            await this.peerConnection.setLocalDescription(offer);
-
-            // OfferをRealtime Databaseに保存（タイムスタンプ付き）
-            const offerRef = ref(database, `room/offer`);
-            await set(offerRef, {
-              type: offer.type,
-              sdp: offer.sdp,
-              timestamp: Date.now(),
-            });
-
-            console.log("Offer送信完了");
-          } catch (error) {
-            console.error("Offer作成エラー:", error);
           }
         }
       });
@@ -209,24 +213,24 @@ export default {
       this.listeners.push(unsubscribe);
     },
 
-    listenForAnswerCandidates() {
-      const candidatesRef = ref(database, `room/answerCandidates`);
+    listenForViewerAnswerCandidates(viewerId) {
+      const candidatesRef = ref(database, `room/signaling/${viewerId}/answerCandidates`);
 
       const unsubscribe = onValue(candidatesRef, (snapshot) => {
         const candidates = snapshot.val();
-        if (candidates) {
-          Object.values(candidates).forEach(async (candidateData) => {
-            if (candidateData && candidateData.candidate) {
-              try {
-                await this.peerConnection.addIceCandidate(
-                    new RTCIceCandidate(candidateData.candidate)
-                );
-              } catch (error) {
-                console.error("ICE候補追加エラー:", error);
-              }
+        if (!candidates) return;
+
+        Object.values(candidates).forEach(async (c) => {
+          if (c && c.candidate) {
+            try {
+              await this.peerConnections[viewerId]?.addIceCandidate(
+                  new RTCIceCandidate(c.candidate)
+              );
+            } catch (error) {
+              console.error("ICE候補追加エラー:", error);
             }
-          });
-        }
+          }
+        });
       });
 
       this.listeners.push(unsubscribe);
@@ -236,8 +240,26 @@ export default {
       const viewersRef = ref(database, `room/viewers`);
 
       const unsubscribe = onValue(viewersRef, (snapshot) => {
-        const viewers = snapshot.val();
-        this.viewerCount = viewers ? Object.keys(viewers).length : 0;
+        const viewers = snapshot.val() || {};
+        this.viewerCount = Object.keys(viewers).length;
+
+        // 離脱した viewer の PeerConnection をクリーンアップ
+        Object.keys(this.peerConnections).forEach((viewerId) => {
+          if (!viewers[viewerId]) {
+            try {
+              this.peerConnections[viewerId].onicecandidate = null;
+              this.peerConnections[viewerId].onconnectionstatechange = null;
+              this.peerConnections[viewerId].oniceconnectionstatechange = null;
+              this.peerConnections[viewerId].close();
+            } catch (error) {
+              console.debug("pc.close() を無視:", error);
+            }
+            delete this.peerConnections[viewerId];
+            // 可能ならシグナリングも掃除
+            remove(ref(database, `room/signaling/${viewerId}`)).catch(() => {
+            });
+          }
+        });
       });
 
       this.listeners.push(unsubscribe);
@@ -269,18 +291,18 @@ export default {
       });
       this.listeners = [];
 
-      // WebRTC接続終了
-      if (this.peerConnection) {
+      // すべての PeerConnection を終了
+      Object.values(this.peerConnections).forEach((pc) => {
         try {
-          this.peerConnection.onicecandidate = null;
-          this.peerConnection.onconnectionstatechange = null;
-          this.peerConnection.oniceconnectionstatechange = null;
-          this.peerConnection.close();
+          pc.onicecandidate = null;
+          pc.onconnectionstatechange = null;
+          pc.oniceconnectionstatechange = null;
+          pc.close();
         } catch (e) {
-          console.debug("peerConnection.close() を無視:", e);
+          console.debug("pc.close() を無視:", e);
         }
-        this.peerConnection = null;
-      }
+      });
+      this.peerConnections = {};
 
       // カメラストリーム停止
       if (this.localStream) {

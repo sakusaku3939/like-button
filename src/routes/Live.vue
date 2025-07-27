@@ -74,6 +74,7 @@ export default {
       broadcastEnded: false,
       listeners: [],
       viewerRef: null,
+      viewerId: null,
 
       // 受信済み候補の重複防止
       processedOfferCandidateIds: new Set(),
@@ -156,7 +157,7 @@ export default {
       let commentCount;
       let isPreviousTop = false;
       onValue(ref(database, "comments"), (snapshot) => {
-        this.commentHistory = Object.values(snapshot.val());
+        this.commentHistory = Object.values(snapshot.val() || {});
         this.commentHistory = this.commentHistory.slice().reverse();
 
         if (commentCount !== undefined && commentCount < snapshot.size) {
@@ -207,7 +208,16 @@ export default {
           console.error("配信者情報が見つかりません");
         }
 
-        // 旧シグナリングの掃除（視聴者が書くパスをクリア）
+        // 視聴者として登録（先に viewerId を確定）
+        const viewerId = this.generateViewerId();
+        this.viewerId = viewerId;
+        this.viewerRef = ref(database, `room/viewers/${viewerId}`);
+        await set(this.viewerRef, {
+          joinedAt: Date.now(),
+          userAgent: navigator.userAgent,
+        });
+
+        // 自分用のシグナリング領域を初期化
         await this.clearViewerSignaling();
 
         // WebRTC PeerConnection作成
@@ -260,7 +270,8 @@ export default {
         this.peerConnection.onicecandidate = async (event) => {
           if (event.candidate) {
             try {
-              const candidatesRef = ref(database, `room/answerCandidates`);
+              if (!this.viewerId) return;
+              const candidatesRef = ref(database, `room/signaling/${this.viewerId}/answerCandidates`);
               await push(candidatesRef, {
                 candidate: event.candidate.toJSON(),
                 timestamp: Date.now(),
@@ -271,21 +282,13 @@ export default {
           }
         };
 
-        // 視聴者として登録
-        const viewerId = this.generateViewerId();
-        this.viewerRef = ref(database, `room/viewers/${viewerId}`);
-        await set(this.viewerRef, {
-          joinedAt: Date.now(),
-          userAgent: navigator.userAgent,
-        });
-
-        // Offer監視開始
+        // Offer監視開始（viewerId 固有）
         await this.listenForOffer(database);
 
-        // Offer候補監視開始（配信者 → 視聴者）
+        // Offer候補監視開始（配信者 → 視聴者、viewerId 固有）
         this.listenForOfferCandidates(database);
 
-        // 配信者に接続要求を送信
+        // 配信者に接続要求を送信（viewerId 固有）
         this.lastJoinRequestAt = Date.now();
         await this.sendJoinRequest(database);
 
@@ -300,8 +303,9 @@ export default {
 
     async clearViewerSignaling() {
       try {
-        // 自分（視聴者）が書き込む候補は毎回クリア
-        await set(ref(database, `room/answerCandidates`), null);
+        if (!this.viewerId) return;
+        await set(ref(database, `room/signaling/${this.viewerId}/answerCandidates`), null);
+        await set(ref(database, `room/signaling/${this.viewerId}/answer`), null);
       } catch (e) {
         console.warn("シグナリング初期化失敗（視聴者）:", e);
       }
@@ -309,10 +313,11 @@ export default {
 
     async sendJoinRequest(database) {
       try {
-        // 配信者に接続要求を送信
-        const answerRef = ref(database, `room/answer`);
-        await set(answerRef, {
+        if (!this.viewerId) return;
+        const reqRef = ref(database, `room/requests/${this.viewerId}`);
+        await set(reqRef, {
           type: "join-request",
+          viewerId: this.viewerId,
           timestamp: Date.now(),
         });
         console.log("参加要求を送信");
@@ -322,7 +327,8 @@ export default {
     },
 
     async listenForOffer(database) {
-      const offerRef = ref(database, `room/offer`);
+      if (!this.viewerId) return;
+      const offerRef = ref(database, `room/signaling/${this.viewerId}/offer`);
 
       const unsubscribe = onValue(offerRef, async (snapshot) => {
         const offerData = snapshot.val();
@@ -340,8 +346,8 @@ export default {
             const answer = await this.peerConnection.createAnswer();
             await this.peerConnection.setLocalDescription(answer);
 
-            // AnswerをRealtime Databaseに保存（上書き）
-            const answerRef = ref(database, `room/answer`);
+            // AnswerをRealtime Databaseに保存（viewerId 固有）
+            const answerRef = ref(database, `room/signaling/${this.viewerId}/answer`);
             await set(answerRef, {
               type: answer.type,
               sdp: answer.sdp,
@@ -360,7 +366,8 @@ export default {
     },
 
     listenForOfferCandidates(database) {
-      const candidatesRef = ref(database, `room/offerCandidates`);
+      if (!this.viewerId) return;
+      const candidatesRef = ref(database, `room/signaling/${this.viewerId}/offerCandidates`);
 
       const unsubscribe = onValue(candidatesRef, (snapshot) => {
         const candidates = snapshot.val();
@@ -488,6 +495,17 @@ export default {
         }
         this.viewerRef = null;
       }
+
+      // join-request とシグナリングを削除
+      if (this.viewerId) {
+        try {
+          await remove(ref(database, `room/requests/${this.viewerId}`));
+          await remove(ref(database, `room/signaling/${this.viewerId}`));
+        } catch (e) {
+          console.debug("リクエスト/シグナリング削除を無視:", e);
+        }
+      }
+      this.viewerId = null;
 
       // UI状態リセット
       this.connected = false;
