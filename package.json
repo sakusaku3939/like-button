@@ -13,6 +13,7 @@
     "firebase": "^11.2.0",
     "glob-parent": "^6.0.2",
     "lottie-web": "^5.12.2",
+    "simple-peer": "^9.11.1",
     "vue": "^3.5.13",
     "vue-cookies": "^1.8.6",
     "vue-loading-overlay": "^6.0.6",

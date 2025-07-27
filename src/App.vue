@@ -2,15 +2,17 @@
   <div id="app">
     <router-view/>
     <div class="link" v-show="hostname === 'localhost'">
-      <router-link to="/">Home</router-link>
+      <router-link to="/">ホーム</router-link>
       <span>│</span>
-      <router-link to="/screen">Screen</router-link>
+      <router-link to="/screen">発表画面</router-link>
       <span>│</span>
       <span v-if="streaming">
-        <router-link to="/live">Live</router-link>
+        <router-link to="/live">ライブ発表画面</router-link>
+        <span>│</span>
+        <router-link to="/broadcast">ライブ配信</router-link>
         <span>│</span>
       </span>
-      <router-link to="/admin">Admin</router-link>
+      <router-link to="/admin">管理画面</router-link>
     </div>
   </div>
 </template>

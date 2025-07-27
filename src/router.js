@@ -8,6 +8,7 @@ import Switch from "./routes/admin/Switch.vue";
 import Comment from "./routes/admin/Comment.vue";
 import Login from "./routes/admin/Login.vue";
 import Live from "@/routes/Live.vue";
+import Broadcast from "@/routes/Broadcast.vue";
 
 const routes = [
     {
@@ -24,6 +25,11 @@ const routes = [
         path: '/live',
         component: Live,
         meta: { requireAuth: false },
+    },
+    {
+        path: '/broadcast',
+        component: Broadcast,
+        meta: { requireAuth: true },
     },
     {
         path: '/admin/login',
