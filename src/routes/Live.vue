@@ -23,17 +23,21 @@
       <span
           class="comment-text border-text"
           :style="{
-            top: `calc(var(--vh) * ${comment.posY})`,
-            width: `${comment.message.length * 72}px`,
-          }"
-          v-text="comment.message"/>
+          top: `calc(var(--vh) * ${comment.posY})`,
+          width: `${comment.message.length * 72}px`,
+        }"
+          v-text="comment.message"
+      />
     </div>
 
     <!-- コメント履歴 -->
     <div class="comment-history">
-      <div class="comment-text border-text" v-for="(comment, index) in this.commentHistory" :key="index"
-           v-text="comment.message">
-      </div>
+      <div
+          class="comment-text border-text"
+          v-for="(comment, index) in this.commentHistory"
+          :key="index"
+          v-text="comment.message"
+      ></div>
     </div>
 
     <!-- タイトル -->
@@ -49,19 +53,18 @@
 
 <script>
 import lottie from "lottie-web";
-import {rtcConfiguration} from '@/config/webrtc-config.js'
+import {rtcConfiguration} from "@/config/webrtc-config.js";
 import {
   ref,
   set,
   push,
   onValue,
-  off,
   get,
   remove,
-  getDatabase
-} from 'firebase/database'
+  getDatabase,
+} from "firebase/database";
 
-const database = getDatabase()
+const database = getDatabase();
 
 let animation;
 
@@ -73,10 +76,19 @@ export default {
       connecting: false,
       peerConnection: null,
       remoteStream: null,
-      connectionStatus: 'disconnected',
-      errorMessage: '',
-      listeners: [], // listener管理用
+      connectionStatus: "disconnected",
+      errorMessage: "",
+      listeners: [], // onValue の解除関数を格納
       viewerRef: null,
+
+      // 受信済み候補の重複防止
+      processedOfferCandidateIds: new Set(),
+
+      // 再接続用
+      reconnectTimer: null,
+      backoffMs: 1000,
+      maxBackoffMs: 15000,
+      lastJoinRequestAt: 0,
 
       // 既存のコメント・アニメーション関連
       imageURL: "",
@@ -89,53 +101,56 @@ export default {
   computed: {
     statusText() {
       const statusMap = {
-        'connecting': 'LIVE',
-        'connected': 'LIVE',
-        'disconnected': '切断',
-        'failed': '接続失敗'
-      }
-      return statusMap[this.connectionStatus] || '不明'
+        connecting: "LIVE",
+        connected: "LIVE",
+        disconnected: "切断",
+        failed: "接続失敗",
+      };
+      return statusMap[this.connectionStatus] || "不明";
     },
 
     statusMessage() {
-      if (this.errorMessage) return 'エラーが発生しました'
-      if (this.connecting) return '配信に接続中...'
-      return '配信を探しています...'
-    }
+      if (this.errorMessage) return "エラーが発生しました";
+      if (this.connecting) return "配信に接続中...";
+      return "配信を探しています...";
+    },
   },
 
   async mounted() {
-    await this.initializeLottie()
-    this.setupCommentListeners()
+    await this.initializeLottie();
+    this.setupCommentListeners();
 
     // 自動的に配信に接続
-    await this.joinBroadcast()
+    await this.joinBroadcast();
 
     // ページ離脱時の処理
-    window.addEventListener('beforeunload', this.cleanup)
+    window.addEventListener("beforeunload", this.cleanup);
+    // モバイル/Safari対策
+    window.addEventListener("pagehide", this.cleanup, {once: true});
   },
 
   beforeUnmount() {
-    this.cleanup()
-    window.removeEventListener('beforeunload', this.cleanup)
+    this.cleanup();
+    window.removeEventListener("beforeunload", this.cleanup);
+    window.removeEventListener("pagehide", this.cleanup);
   },
 
   methods: {
     async initializeLottie() {
       animation = lottie.loadAnimation({
-        container: document.querySelector('#lottie'),
-        renderer: 'svg',
+        container: document.querySelector("#lottie"),
+        renderer: "svg",
         loop: false,
         autoplay: false,
-        path: 'https://lottie.host/129ab9bd-9710-452a-8baa-80250a322e82/cUU5i81gxy.json'
+        path: "https://lottie.host/129ab9bd-9710-452a-8baa-80250a322e82/cUU5i81gxy.json",
       });
     },
 
     setupCommentListeners() {
       // 既存のコメント機能
       let currentId;
-      const currentRef = ref(database, "current")
-      onValue(currentRef, (snapshot) => {
+      const currentRef = ref(database, "current");
+      const unsubCurrent = onValue(currentRef, (snapshot) => {
         const current = snapshot.val();
         if (current) {
           if (currentId !== undefined && currentId === current.id) {
@@ -145,11 +160,12 @@ export default {
           this.currentTitle = current.title;
         }
       });
+      this.listeners.push(unsubCurrent);
 
       let commentCount;
       let isPreviousTop = false;
-      const commentsRef = ref(database, "comments")
-      onValue(commentsRef, (snapshot) => {
+      const commentsRef = ref(database, "comments");
+      const unsubComments = onValue(commentsRef, (snapshot) => {
         const comments = snapshot.val();
         if (comments) {
           this.commentHistory = Object.values(comments).reverse();
@@ -157,7 +173,8 @@ export default {
           const newCommentCount = Object.keys(comments).length;
           if (commentCount !== undefined && commentCount < newCommentCount) {
             const commentKeys = Object.keys(comments);
-            const latestComment = comments[commentKeys[commentKeys.length - 1]];
+            const latestComment =
+                comments[commentKeys[commentKeys.length - 1]];
 
             const topMin = 0;
             const topMax = 24;
@@ -174,245 +191,321 @@ export default {
             const max = isTop ? topMax : bottomMax;
             const posY = Math.floor(Math.random() * (max + 1 - min)) + min;
 
-            this.commentList.push({message: latestComment.message, posY: posY});
+            this.commentList.push({
+              message: latestComment.message,
+              posY: posY,
+            });
           }
           commentCount = newCommentCount;
         }
       });
+      this.listeners.push(unsubComments);
     },
 
     async joinBroadcast() {
-      this.connecting = true
-      this.errorMessage = ''
+      this.connecting = true;
+      this.errorMessage = "";
+      this.connectionStatus = "connecting";
+      this.processedOfferCandidateIds.clear();
 
       try {
         // 配信ルーム存在確認
-        const roomRef = ref(database, `room`)
-        const roomSnapshot = await get(roomRef)
+        const roomRef = ref(database, `room`);
+        const roomSnapshot = await get(roomRef);
 
         if (!roomSnapshot.exists()) {
-          console.error('配信ルームが存在しません')
+          console.error("配信ルームが存在しません");
         }
 
-        const roomData = roomSnapshot.val()
-        if (!roomData.broadcaster) {
-          console.error('配信者情報が見つかりません')
+        const roomData = roomSnapshot.val();
+        if (!roomData || !roomData.broadcaster) {
+          console.error("配信者情報が見つかりません");
         }
+
+        // 旧シグナリングの掃除（視聴者が書くパスをクリア）
+        await this.clearViewerSignaling();
 
         // WebRTC PeerConnection作成
-        this.peerConnection = new RTCPeerConnection(rtcConfiguration)
+        this.peerConnection = new RTCPeerConnection(rtcConfiguration);
 
         // リモートストリーム受信設定
         this.peerConnection.ontrack = (event) => {
-          console.log('リモートストリーム受信:', event.streams[0])
-          this.remoteStream = event.streams[0]
-          this.displayRemoteStream()
-        }
+          console.log("リモートストリーム受信:", event.streams[0]);
+          this.remoteStream = event.streams[0];
+          this.displayRemoteStream();
+        };
 
         // 接続状態監視
         this.peerConnection.onconnectionstatechange = () => {
-          this.connectionStatus = this.peerConnection.connectionState
-          console.log('接続状態:', this.connectionStatus)
+          this.connectionStatus = this.peerConnection.connectionState;
+          console.log("接続状態:", this.connectionStatus);
 
-          if (this.connectionStatus === 'connected') {
-            this.connected = true
-            this.connecting = false
-          } else if (this.connectionStatus === 'failed') {
-            this.errorMessage = '接続に失敗しました'
-            this.connecting = false
+          if (this.connectionStatus === "connected") {
+            this.connected = true;
+            this.connecting = false;
+            this.backoffMs = 1000; // 成功したらバックオフをリセット
+            if (this.reconnectTimer) {
+              clearTimeout(this.reconnectTimer);
+              this.reconnectTimer = null;
+            }
+          } else if (this.connectionStatus === "failed") {
+            this.errorMessage = "接続に失敗しました";
+            this.connecting = false;
+            this.scheduleReconnect();
+          } else if (this.connectionStatus === "disconnected") {
+            // 一時切断のこともあるので少し待ってから再接続
+            this.scheduleReconnect();
           }
-        }
+        };
 
-        // ICE候補収集
+        // ICE状態監視（より詳細）
+        this.peerConnection.oniceconnectionstatechange = () => {
+          const ice = this.peerConnection.iceConnectionState;
+          console.log("ICE状態:", ice);
+          if (ice === "failed" || ice === "disconnected") {
+            this.scheduleReconnect();
+          }
+        };
+
+        // ICE候補収集（視聴者 → 配信者）
         this.peerConnection.onicecandidate = async (event) => {
           if (event.candidate) {
             try {
-              const candidatesRef = ref(database, `room/answerCandidates`)
+              const candidatesRef = ref(database, `room/answerCandidates`);
               await push(candidatesRef, {
                 candidate: event.candidate.toJSON(),
-                timestamp: Date.now()
-              })
+                timestamp: Date.now(),
+              });
             } catch (error) {
-              console.error('ICE候補送信エラー:', error)
+              console.error("ICE候補送信エラー:", error);
             }
           }
-        }
+        };
 
         // 視聴者として登録
-        const viewerId = this.generateViewerId()
-        this.viewerRef = ref(database, `room/viewers/${viewerId}`)
+        const viewerId = this.generateViewerId();
+        this.viewerRef = ref(database, `room/viewers/${viewerId}`);
         await set(this.viewerRef, {
           joinedAt: Date.now(),
-          userAgent: navigator.userAgent
-        })
+          userAgent: navigator.userAgent,
+        });
 
         // Offer監視開始
-        await this.listenForOffer(database)
+        await this.listenForOffer(database);
 
-        // Offer候補監視開始
-        this.listenForOfferCandidates(database)
+        // Offer候補監視開始（配信者 → 視聴者）
+        this.listenForOfferCandidates(database);
 
         // 配信者に接続要求を送信
-        await this.sendJoinRequest(database)
+        this.lastJoinRequestAt = Date.now();
+        await this.sendJoinRequest(database);
 
-        console.log('配信接続開始')
-
+        console.log("配信接続開始");
       } catch (error) {
-        console.error('配信接続エラー:', error)
-        this.errorMessage = error.message || '配信への接続に失敗しました'
-        this.connecting = false
+        console.error("配信接続エラー:", error);
+        this.errorMessage = error.message || "配信への接続に失敗しました";
+        this.connecting = false;
+        this.scheduleReconnect();
+      }
+    },
+
+    async clearViewerSignaling() {
+      try {
+        // 自分（視聴者）が書き込む候補は毎回クリア
+        await set(ref(database, `room/answerCandidates`), null);
+      } catch (e) {
+        console.warn("シグナリング初期化失敗（視聴者）:", e);
       }
     },
 
     async sendJoinRequest(database) {
       try {
         // 配信者に接続要求を送信
-        const answerRef = ref(database, `room/answer`)
+        const answerRef = ref(database, `room/answer`);
         await set(answerRef, {
-          type: 'join-request',
-          timestamp: Date.now()
-        })
-        console.log('参加要求送信完了')
+          type: "join-request",
+          timestamp: Date.now(),
+        });
+        console.log("参加要求送信完了");
       } catch (error) {
-        console.error('参加要求送信エラー:', error)
+        console.error("参加要求送信エラー:", error);
       }
     },
 
     async listenForOffer(database) {
-      const offerRef = ref(database, `room/offer`)
+      const offerRef = ref(database, `room/offer`);
 
       const unsubscribe = onValue(offerRef, async (snapshot) => {
-        const offerData = snapshot.val()
+        const offerData = snapshot.val();
 
-        if (offerData && offerData.type === 'offer') {
-          console.log('Offer受信:', offerData)
+        // 参加要求より古い Offer（タイムスタンプ付きの場合）は無視
+        if (offerData && offerData.type === "offer") {
+          if (
+              offerData.timestamp &&
+              offerData.timestamp < this.lastJoinRequestAt
+          ) {
+            console.log("古い Offer を無視しました");
+            return;
+          }
+
+          console.log("Offer受信:", offerData);
 
           try {
             // Remote description設定
             await this.peerConnection.setRemoteDescription(
                 new RTCSessionDescription(offerData)
-            )
+            );
 
             // Answer作成
-            const answer = await this.peerConnection.createAnswer()
-            await this.peerConnection.setLocalDescription(answer)
+            const answer = await this.peerConnection.createAnswer();
+            await this.peerConnection.setLocalDescription(answer);
 
-            // AnswerをRealtime Databaseに保存
-            const answerRef = ref(database, `room/answer`)
+            // AnswerをRealtime Databaseに保存（上書き）
+            const answerRef = ref(database, `room/answer`);
             await set(answerRef, {
               type: answer.type,
-              sdp: answer.sdp
-            })
+              sdp: answer.sdp,
+              timestamp: Date.now(),
+            });
 
-            console.log('Answer送信完了')
+            console.log("Answer送信完了");
           } catch (error) {
-            console.error('Offer処理エラー:', error)
-            this.errorMessage = 'WebRTC接続エラー'
+            console.error("Offer処理エラー:", error);
+            this.errorMessage = "WebRTC接続エラー";
           }
         }
-      })
+      });
 
-      this.listeners.push(() => off(offerRef, 'value', unsubscribe))
+      this.listeners.push(unsubscribe);
     },
 
     listenForOfferCandidates(database) {
-      const candidatesRef = ref(database, `room/offerCandidates`)
+      const candidatesRef = ref(database, `room/offerCandidates`);
 
       const unsubscribe = onValue(candidatesRef, (snapshot) => {
-        const candidates = snapshot.val()
+        const candidates = snapshot.val();
         if (candidates) {
-          Object.values(candidates).forEach(async (candidateData) => {
-            if (candidateData.candidate) {
+          Object.entries(candidates).forEach(async ([key, candidateData]) => {
+            if (candidateData && candidateData.candidate) {
+              if (this.processedOfferCandidateIds.has(key)) return;
+              this.processedOfferCandidateIds.add(key);
               try {
                 await this.peerConnection.addIceCandidate(
                     new RTCIceCandidate(candidateData.candidate)
-                )
+                );
               } catch (error) {
-                console.error('ICE候補追加エラー:', error)
+                console.error("ICE候補追加エラー:", error);
               }
             }
-          })
+          });
         }
-      })
+      });
 
-      this.listeners.push(() => off(candidatesRef, 'value', unsubscribe))
+      this.listeners.push(unsubscribe);
     },
 
     displayRemoteStream() {
       // 背景として映像を表示
-      const backgroundDiv = this.$refs.backgroundVideo
+      const backgroundDiv = this.$refs.backgroundVideo;
 
       // 既存のvideo要素があれば削除
-      const existingVideo = backgroundDiv.querySelector('video')
+      const existingVideo = backgroundDiv.querySelector("video");
       if (existingVideo) {
-        existingVideo.remove()
+        existingVideo.remove();
       }
 
       // 新しいvideo要素作成
-      const video = document.createElement('video')
-      video.srcObject = this.remoteStream
-      video.autoplay = true
-      video.playsInline = true
-      video.muted = true
-      video.style.width = '100%'
-      video.style.height = '100%'
-      video.style.objectFit = 'cover'
+      const video = document.createElement("video");
+      video.srcObject = this.remoteStream;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+      video.style.width = "100%";
+      video.style.height = "100%";
+      video.style.objectFit = "cover";
 
-      backgroundDiv.appendChild(video)
+      backgroundDiv.appendChild(video);
 
-      console.log('リモート映像表示完了')
+      console.log("リモート映像表示完了");
     },
 
     generateViewerId() {
-      return 'viewer_' + Math.random().toString(36).substring(2, 15)
+      return "viewer_" + Math.random().toString(36).substring(2, 15);
+    },
+
+    scheduleReconnect() {
+      if (this.reconnectTimer || this.connected || this.connecting) return;
+      const delay = Math.min(this.backoffMs, this.maxBackoffMs);
+      console.log(`再接続を ${delay}ms 後に試行します`);
+      this.reconnectTimer = setTimeout(async () => {
+        this.reconnectTimer = null;
+        this.backoffMs = Math.min(this.backoffMs * 2, this.maxBackoffMs);
+        await this.retryConnection();
+      }, delay);
     },
 
     async retryConnection() {
-      this.errorMessage = ''
-      await this.cleanup()
-      await this.joinBroadcast()
+      this.errorMessage = "";
+      await this.cleanup();
+      await this.joinBroadcast();
     },
 
     async cleanup() {
-      // リスナー解除
-      this.listeners.forEach(unsubscribe => {
+      // タイマー解除
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+
+      // リスナー解除（保存した解除関数を呼ぶ）
+      this.listeners.forEach((unsub) => {
         try {
-          unsubscribe()
+          if (typeof unsub === "function") unsub();
         } catch (error) {
-          console.error('リスナー解除エラー:', error)
+          console.error("リスナー解除エラー:", error);
         }
-      })
-      this.listeners = []
+      });
+      this.listeners = [];
 
       // WebRTC接続終了
       if (this.peerConnection) {
-        this.peerConnection.close()
-        this.peerConnection = null
+        try {
+          this.peerConnection.ontrack = null;
+          this.peerConnection.onicecandidate = null;
+          this.peerConnection.onconnectionstatechange = null;
+          this.peerConnection.oniceconnectionstatechange = null;
+          this.peerConnection.close();
+        } catch (e) {
+          // close() は既に終了済み等で例外になることがあるが実害はないため無視
+          console.debug("peerConnection.close() を無視:", e);
+        }
+        this.peerConnection = null;
       }
 
       // 視聴者登録解除
       if (this.viewerRef) {
         try {
-          await remove(this.viewerRef)
+          await remove(this.viewerRef);
         } catch (error) {
-          console.error('視聴者登録解除エラー:', error)
+          console.error("視聴者登録解除エラー:", error);
         }
+        this.viewerRef = null;
       }
 
       // UI状態リセット
-      this.connected = false
-      this.connecting = false
-      this.connectionStatus = 'disconnected'
-      this.remoteStream = null
+      this.connected = false;
+      this.connecting = false;
+      this.connectionStatus = "disconnected";
+      this.remoteStream = null;
 
       // 背景映像削除
-      const backgroundDiv = this.$refs.backgroundVideo
+      const backgroundDiv = this.$refs.backgroundVideo;
       if (backgroundDiv) {
-        backgroundDiv.innerHTML = ''
+        backgroundDiv.innerHTML = "";
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style scoped>
@@ -432,7 +525,7 @@ export default {
 .background:after {
   content: "";
   display: block;
-  background-color: rgba(0, 0, 0, .3);
+  background-color: rgba(0, 0, 0, 0.3);
   position: absolute;
   top: 0;
   left: 0;
@@ -580,8 +673,7 @@ export default {
 
 .border-text {
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000,
-  -1px 1px 0 #000, 1px -1px 0 #000,
-  0 1px 0 #000, 0 -1px 0 #000,
+  -1px 1px 0 #000, 1px -1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000,
   -1px 0 0 #000, 1px 0 0 #000;
 }
 
@@ -617,10 +709,10 @@ export default {
 
 @keyframes scroll {
   0% {
-    transform: translateX(0)
+    transform: translateX(0);
   }
   100% {
-    transform: translateX(-100%)
+    transform: translateX(-100%);
   }
 }
 

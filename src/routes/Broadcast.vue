@@ -24,7 +24,7 @@
           :disabled="!cameraStarted || broadcasting"
           class="btn btn-success"
       >
-        {{ broadcasting ? '配信中...' : '配信開始' }}
+        {{ broadcasting ? "配信中..." : "配信開始" }}
       </button>
 
       <button
@@ -48,41 +48,42 @@
 </template>
 
 <script>
-import { rtcConfiguration } from '@/config/webrtc-config'
+import {rtcConfiguration} from "@/config/webrtc-config";
 import {
   ref,
   set,
   push,
   onValue,
-  off,
   remove,
-  getDatabase
-} from 'firebase/database'
+  getDatabase,
+} from "firebase/database";
 
-const database = getDatabase()
+const database = getDatabase();
 
 export default {
-  name: 'Broadcast',
+  name: "Broadcast",
   data() {
     return {
       localStream: null,
       peerConnection: null,
       cameraStarted: false,
       broadcasting: false,
-      connectionStatus: '未接続',
+      connectionStatus: "未接続",
       viewerCount: 0,
-      listeners: [] // listener管理用
-    }
+      listeners: [], // onValue の解除関数を格納
+    };
   },
 
   async mounted() {
     // ページ離脱時の処理
-    window.addEventListener('beforeunload', this.cleanup)
+    window.addEventListener("beforeunload", this.cleanup);
+    window.addEventListener("pagehide", this.cleanup, {once: true});
   },
 
   beforeUnmount() {
-    this.cleanup()
-    window.removeEventListener('beforeunload', this.cleanup)
+    this.cleanup();
+    window.removeEventListener("beforeunload", this.cleanup);
+    window.removeEventListener("pagehide", this.cleanup);
   },
 
   methods: {
@@ -90,204 +91,222 @@ export default {
       try {
         this.localStream = await navigator.mediaDevices.getUserMedia({
           video: {width: 1280, height: 720},
-          audio: true
-        })
+          audio: true,
+        });
 
-        this.$refs.localVideo.srcObject = this.localStream
-        this.cameraStarted = true
-        console.log('カメラ開始成功')
+        this.$refs.localVideo.srcObject = this.localStream;
+        this.cameraStarted = true;
+        console.log("カメラ開始成功");
       } catch (error) {
-        console.error('カメラアクセスエラー:', error)
-        alert('カメラにアクセスできませんでした')
+        console.error("カメラアクセスエラー:", error);
+        alert("カメラにアクセスできませんでした");
       }
     },
 
     async startBroadcast() {
       if (!this.localStream) {
-        alert('まずカメラを開始してください')
-        return
+        alert("まずカメラを開始してください");
+        return;
       }
 
       try {
         // WebRTC PeerConnection作成
-        this.peerConnection = new RTCPeerConnection(rtcConfiguration)
+        this.peerConnection = new RTCPeerConnection(rtcConfiguration);
 
         // ローカルストリームを追加
-        this.localStream.getTracks().forEach(track => {
-          this.peerConnection.addTrack(track, this.localStream)
-        })
+        this.localStream.getTracks().forEach((track) => {
+          this.peerConnection.addTrack(track, this.localStream);
+        });
 
-        // ルーム初期化（既存のルームをクリア）
-        const roomRef = ref(database, `room`)
+        // ルーム初期化（既存のルームとシグナリングをクリア）
+        const roomRef = ref(database, `room`);
         await set(roomRef, {
           broadcaster: true,
-          status: 'live',
+          status: "live",
           started: Date.now(),
           offer: null,
-          answer: null
-        })
+          answer: null,
+        });
+        await set(ref(database, `room/offerCandidates`), null);
+        await set(ref(database, `room/answerCandidates`), null);
 
-        // ICE候補の収集
+        // ICE候補の収集（配信者 → 視聴者）
         this.peerConnection.onicecandidate = async (event) => {
           if (event.candidate) {
-            const candidatesRef = ref(database, `room/offerCandidates`)
+            const candidatesRef = ref(database, `room/offerCandidates`);
             await push(candidatesRef, {
               candidate: event.candidate.toJSON(),
-              timestamp: Date.now()
-            })
+              timestamp: Date.now(),
+            });
           }
-        }
+        };
 
         // 接続状態の監視
         this.peerConnection.onconnectionstatechange = () => {
-          this.connectionStatus = this.peerConnection.connectionState
-        }
+          this.connectionStatus = this.peerConnection.connectionState;
+        };
+
+        this.peerConnection.oniceconnectionstatechange = () => {
+          // 必要ならログ出力等
+        };
 
         // Answerの監視を開始
-        this.listenForAnswer()
+        this.listenForAnswer();
 
         // 視聴者監視開始
-        this.listenForViewers()
+        this.listenForViewers();
 
-        // Answer候補監視開始
-        this.listenForAnswerCandidates()
+        // Answer候補監視開始（視聴者 → 配信者）
+        this.listenForAnswerCandidates();
 
-        this.broadcasting = true
-        this.connectionStatus = '視聴者待ち'
+        this.broadcasting = true;
+        this.connectionStatus = "視聴者待ち";
 
-        console.log('配信開始完了')
+        console.log("配信開始完了");
       } catch (error) {
-        console.error('配信開始エラー:', error)
-        alert('配信開始に失敗しました: ' + error.message)
+        console.error("配信開始エラー:", error);
+        alert("配信開始に失敗しました: " + error.message);
       }
     },
 
     async listenForAnswer() {
-      const answerRef = ref(database, `room/answer`)
+      const answerRef = ref(database, `room/answer`);
 
       const unsubscribe = onValue(answerRef, async (snapshot) => {
-        const answerData = snapshot.val()
+        const answerData = snapshot.val();
 
-        if (answerData && answerData.type && answerData.type !== 'join-request' && !this.peerConnection.remoteDescription) {
-          console.log('Answer受信:', answerData)
+        if (answerData && answerData.type && answerData.type !== "join-request") {
+          console.log("Answer受信:", answerData);
 
           try {
-            // Remote descriptionを設定
+            // Remote descriptionを毎回セット（再交渉を妨げない）
             await this.peerConnection.setRemoteDescription(
                 new RTCSessionDescription(answerData)
-            )
+            );
 
-            console.log('Answer設定完了')
+            console.log("Answer設定完了");
           } catch (error) {
-            console.error('Answer設定エラー:', error)
+            console.error("Answer設定エラー:", error);
           }
-        } else if (answerData && answerData.type === 'join-request') {
-          console.log('視聴者参加要求受信')
-          // WebRTC Offerを作成
+        } else if (answerData && answerData.type === "join-request") {
+          console.log("視聴者参加要求受信");
+          // 新しい視聴者に対応するため、古い Offer/候補をクリアしてから Offer 作成
           try {
-            const offer = await this.peerConnection.createOffer()
-            await this.peerConnection.setLocalDescription(offer)
+            await set(ref(database, `room/offer`), null);
+            await set(ref(database, `room/offerCandidates`), null);
 
-            // OfferをRealtime Databaseに保存
-            const offerRef = ref(database, `room/offer`)
+            const offer = await this.peerConnection.createOffer();
+            await this.peerConnection.setLocalDescription(offer);
+
+            // OfferをRealtime Databaseに保存（タイムスタンプ付き）
+            const offerRef = ref(database, `room/offer`);
             await set(offerRef, {
               type: offer.type,
-              sdp: offer.sdp
-            })
+              sdp: offer.sdp,
+              timestamp: Date.now(),
+            });
 
-            console.log('Offer送信完了')
+            console.log("Offer送信完了");
           } catch (error) {
-            console.error('Offer作成エラー:', error)
+            console.error("Offer作成エラー:", error);
           }
         }
-      })
+      });
 
-      this.listeners.push(() => off(answerRef, 'value', unsubscribe))
+      this.listeners.push(unsubscribe);
     },
 
     listenForAnswerCandidates() {
-      const candidatesRef = ref(database, `room/answerCandidates`)
+      const candidatesRef = ref(database, `room/answerCandidates`);
 
       const unsubscribe = onValue(candidatesRef, (snapshot) => {
-        const candidates = snapshot.val()
+        const candidates = snapshot.val();
         if (candidates) {
           Object.values(candidates).forEach(async (candidateData) => {
-            if (candidateData.candidate) {
+            if (candidateData && candidateData.candidate) {
               try {
                 await this.peerConnection.addIceCandidate(
                     new RTCIceCandidate(candidateData.candidate)
-                )
+                );
               } catch (error) {
-                console.error('ICE候補追加エラー:', error)
+                console.error("ICE候補追加エラー:", error);
               }
             }
-          })
+          });
         }
-      })
+      });
 
-      this.listeners.push(() => off(candidatesRef, 'value', unsubscribe))
+      this.listeners.push(unsubscribe);
     },
 
     listenForViewers() {
-      const viewersRef = ref(database, `room/viewers`)
+      const viewersRef = ref(database, `room/viewers`);
 
       const unsubscribe = onValue(viewersRef, (snapshot) => {
-        const viewers = snapshot.val()
-        this.viewerCount = viewers ? Object.keys(viewers).length : 0
-      })
+        const viewers = snapshot.val();
+        this.viewerCount = viewers ? Object.keys(viewers).length : 0;
+      });
 
-      this.listeners.push(() => off(viewersRef, 'value', unsubscribe))
+      this.listeners.push(unsubscribe);
     },
 
     async stopBroadcast() {
       try {
-        await this.cleanup()
+        await this.cleanup();
 
         // UI状態リセット
-        this.broadcasting = false
-        this.connectionStatus = '未接続'
-        this.viewerCount = 0
+        this.broadcasting = false;
+        this.connectionStatus = "未接続";
+        this.viewerCount = 0;
 
-        console.log('配信停止完了')
+        console.log("配信停止完了");
       } catch (error) {
-        console.error('配信停止エラー:', error)
+        console.error("配信停止エラー:", error);
       }
     },
 
     async cleanup() {
-      // リスナー解除
-      this.listeners.forEach(unsubscribe => {
+      // リスナー解除（保存した解除関数を呼ぶ）
+      this.listeners.forEach((unsub) => {
         try {
-          unsubscribe()
+          if (typeof unsub === "function") unsub();
         } catch (error) {
-          console.error('リスナー解除エラー:', error)
+          console.error("リスナー解除エラー:", error);
         }
-      })
-      this.listeners = []
+      });
+      this.listeners = [];
 
       // WebRTC接続終了
       if (this.peerConnection) {
-        this.peerConnection.close()
-        this.peerConnection = null
+        try {
+          this.peerConnection.onicecandidate = null;
+          this.peerConnection.onconnectionstatechange = null;
+          this.peerConnection.oniceconnectionstatechange = null;
+          this.peerConnection.close();
+        } catch (e) {
+          // close() は既に終了済み等で例外になることがあるが実害はないため無視
+          console.debug("peerConnection.close() を無視:", e);
+        }
+        this.peerConnection = null;
       }
 
       // カメラストリーム停止
       if (this.localStream) {
-        this.localStream.getTracks().forEach(track => track.stop())
-        this.localStream = null
-        this.cameraStarted = false
+        this.localStream.getTracks().forEach((track) => track.stop());
+        this.localStream = null;
+        this.cameraStarted = false;
       }
 
       // Realtime Databaseルーム削除
       try {
-        const roomRef = ref(database, `room`)
-        await remove(roomRef)
+        const roomRef = ref(database, `room`);
+        await remove(roomRef);
       } catch (error) {
-        console.error('ルーム削除エラー:', error)
+        console.error("ルーム削除エラー:", error);
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style scoped>
