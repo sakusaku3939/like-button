@@ -6,7 +6,7 @@
       <span>│</span>
       <router-link to="/screen">発表画面</router-link>
       <span>│</span>
-      <router-link to="/live">ライブ配信画面</router-link>
+      <router-link to="/live">発表画面（Live）</router-link>
       <span>│</span>
       <router-link to="/admin">管理者画面</router-link>
     </div>

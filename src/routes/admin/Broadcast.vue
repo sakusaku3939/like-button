@@ -1,37 +1,43 @@
 <template>
-  <div class="broadcast-container">
-    <div class="video-container">
-      <video
-          ref="localVideo"
-          autoplay
-          muted
-          playsinline
-          class="local-video"
-      ></video>
-    </div>
+  <div id="app">
+    <h1>ライブ配信</h1>
+    <p>①「配信開始」をクリックしてカメラを起動し、ライブ配信を開始します。</p>
+    <p>② <router-link to="/Live" target="_blank">発表画面（Live）</router-link> に移動し、プロジェクターなどで画面を投影します。</p>
 
-    <div class="controls">
-      <button
-          @click="startBroadcast"
-          :disabled="broadcasting"
-          class="btn btn-success">
-        {{ broadcasting ? "配信中..." : "配信開始" }}
-      </button>
+    <div class="broadcast-container">
+      <div class="video-container">
+        <video
+            ref="localVideo"
+            autoplay
+            muted
+            playsinline
+            class="local-video"
+        ></video>
+      </div>
 
-      <button
-          @click="stopBroadcast"
-          :disabled="!broadcasting"
-          class="btn btn-danger">
-        配信停止
-      </button>
-    </div>
+      <div class="controls">
+        <button
+            @click="startBroadcast"
+            :disabled="broadcasting"
+            class="btn btn-success">
+          {{ broadcasting ? "配信中..." : "配信開始" }}
+        </button>
 
-    <div v-if="broadcasting" class="broadcast-info">
-      <div class="status-card">
-        <h3>📺 配信中</h3>
-        <p>状態: {{ connectionStatus }}</p>
-        <p v-if="viewerCount > 0">視聴者数: {{ viewerCount }}人</p>
-        <p v-else>視聴者を待機中...</p>
+        <button
+            @click="stopBroadcast"
+            :disabled="!broadcasting"
+            class="btn btn-danger">
+          配信停止
+        </button>
+      </div>
+
+      <div v-if="broadcasting" class="broadcast-info">
+        <div class="status-card">
+          <h3>📺 配信中</h3>
+          <p>状態: {{ connectionStatus }}</p>
+          <p v-if="viewerCount > 0">視聴者数: {{ viewerCount }}人</p>
+          <p v-else>視聴者を待機中...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -296,6 +302,18 @@ export default {
 </script>
 
 <style scoped>
+#app {
+  margin: 112px 0;
+}
+
+h1 {
+  text-align: center;
+}
+
+p {
+  text-align: center;
+}
+
 .broadcast-container {
   max-width: 800px;
   margin: 0 auto;
