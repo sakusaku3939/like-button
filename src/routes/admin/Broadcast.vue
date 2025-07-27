@@ -92,8 +92,12 @@ export default {
     async startBroadcast() {
       try {
         this.localStream = await navigator.mediaDevices.getUserMedia({
-          video: {width: 1280, height: 720},
-          audio: true,
+          video: {
+            width: 1280,
+            height: 720,
+            facingMode: { exact: "environment" }
+          },
+          audio: true
         });
 
         this.$refs.localVideo.srcObject = this.localStream;
@@ -101,7 +105,7 @@ export default {
         console.log("カメラ開始成功");
       } catch (error) {
         console.error("カメラアクセスエラー:", error);
-        alert("カメラにアクセスできませんでした");
+        alert("カメラにアクセスできませんでした: " + error.message);
       }
 
       if (!this.localStream) {
