@@ -17,6 +17,9 @@
 import config from "./config/firebase-config.js"
 import sw from "./common/switch-scroll.js"
 import {initializeApp} from 'firebase/app';
+import {useRemoteConfig} from "@/common/use-remote-config";
+
+const {fetchConfig} = useRemoteConfig()
 
 initializeApp(config);
 
@@ -31,6 +34,7 @@ sw.disableScroll();
 export default {
   async created() {
     this.hostname = document.location.hostname;
+    await fetchConfig()
   },
   data() {
     return {

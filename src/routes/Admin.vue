@@ -35,12 +35,11 @@
 <script>
 import {useRemoteConfig} from "@/common/use-remote-config";
 
-const {fetchConfig, getStreaming} = useRemoteConfig()
+const {getStreaming} = useRemoteConfig()
 
 export default {
   async created() {
     this.hostname = document.location.hostname;
-    await fetchConfig()
     this.streamingEnabled = await getStreaming()
   },
   data() {
