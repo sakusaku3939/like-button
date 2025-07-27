@@ -327,16 +327,7 @@ export default {
       const unsubscribe = onValue(offerRef, async (snapshot) => {
         const offerData = snapshot.val();
 
-        // 参加要求より古い Offer（タイムスタンプ付きの場合）は無視
         if (offerData && offerData.type === "offer") {
-          if (
-              offerData.timestamp &&
-              offerData.timestamp < this.lastJoinRequestAt
-          ) {
-            console.log("古い Offer を無視しました");
-            return;
-          }
-
           console.log("Offer受信:", offerData);
 
           try {
@@ -657,7 +648,6 @@ export default {
   }
 }
 
-/* 既存のスタイル */
 #lottie {
   position: absolute;
   top: 50%;
