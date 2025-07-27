@@ -5,8 +5,10 @@
       <span>│</span>
       <router-link to="/screen">発表画面</router-link>
       <span>│</span>
-      <router-link to="/live" v-if="streamingEnabled">発表画面（Live）</router-link>
-      <span>│</span>
+      <span v-if="streamingEnabled">
+        <router-link to="/live">発表画面（Live）</router-link>
+        <span>│</span>
+      </span>
       <router-link to="/admin">管理者画面</router-link>
     </div>
     <div class="card-list">
@@ -22,7 +24,7 @@
         <span class="fas fa-comments"></span>
         <p>コメント確認</p>
       </router-link>
-      <router-link to="/admin/broadcast" class="card" v-if="streamingEnabled">
+      <router-link to="/admin/broadcast" class="card" v-if="streamingEnabled || hostname === 'localhost'">
         <span class="fas fa-video"></span>
         <p>ライブ配信</p>
       </router-link>
