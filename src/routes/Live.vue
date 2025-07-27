@@ -37,9 +37,16 @@
 
     <div class="title border-text">{{ currentTitle }}</div>
 
-    <div v-if="connected" class="connection-indicator">
-      <span class="status-dot" :class="connectionStatus"></span>
-      <span class="status-text">{{ statusText }}</span>
+    <div class="overlay-wrapper">
+      <div v-if="connected" class="mute-button" @click="toggleMute">
+        <span class="mute-icon">{{ muted ? '🔇' : '🔊' }}</span>
+        <span class="mute-text">{{ muted ? 'ミュート解除' : 'ミュート' }}</span>
+      </div>
+
+      <div v-if="connected" class="connection-indicator">
+        <span class="status-dot" :class="connectionStatus"></span>
+        <span class="status-text">{{ statusText }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -75,6 +82,7 @@ export default {
       listeners: [],
       viewerRef: null,
       viewerId: null,
+      muted: true,
 
       // 受信済み候補の重複防止
       processedOfferCandidateIds: new Set(),
@@ -186,6 +194,14 @@ export default {
         }
         commentCount = snapshot.size;
       });
+    },
+
+    toggleMute() {
+      this.muted = !this.muted;
+      const video = this.$refs.backgroundVideo.querySelector("video");
+      if (video) {
+        video.muted = this.muted;
+      }
     },
 
     async joinBroadcast() {
@@ -423,7 +439,7 @@ export default {
       video.srcObject = this.remoteStream;
       video.autoplay = true;
       video.playsInline = true;
-      video.muted = true;
+      video.muted = this.muted;
       video.style.width = "100%";
       video.style.height = "100%";
       video.style.objectFit = "cover";
@@ -620,10 +636,16 @@ export default {
   background: #0056b3;
 }
 
-.connection-indicator {
+.overlay-wrapper {
+  display: flex;
   position: fixed;
   top: 20px;
   right: 20px;
+  z-index: 100;
+  gap: 8px;
+}
+
+.mute-button {
   background: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 10px 15px;
@@ -631,7 +653,32 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 100;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease;
+}
+
+.mute-button:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.mute-icon {
+  font-size: 16px;
+}
+
+.mute-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.connection-indicator {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .status-dot {
@@ -754,6 +801,21 @@ export default {
     right: 10px;
     padding: 8px 16px;
     font-size: 14px;
+  }
+
+  .mute-button {
+    top: 10px;
+    left: 10px;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  .mute-icon {
+    font-size: 14px;
+  }
+
+  .mute-text {
+    font-size: 12px;
   }
 }
 </style>
