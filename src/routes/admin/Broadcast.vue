@@ -53,6 +53,7 @@ import {
   remove,
   getDatabase,
 } from "firebase/database";
+import sw from "@/common/switch-scroll";
 
 const database = getDatabase();
 
@@ -70,16 +71,21 @@ export default {
     };
   },
 
+  created() {
+    sw.enableScroll();
+  },
   async mounted() {
     // ページ離脱時の処理
     window.addEventListener("beforeunload", this.cleanup);
     window.addEventListener("pagehide", this.cleanup, {once: true});
   },
-
   beforeUnmount() {
     this.cleanup();
     window.removeEventListener("beforeunload", this.cleanup);
     window.removeEventListener("pagehide", this.cleanup);
+  },
+  unmounted() {
+    sw.disableScroll();
   },
 
   methods: {
