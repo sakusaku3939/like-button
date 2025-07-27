@@ -2,7 +2,10 @@
   <div id="app">
     <h1>ライブ配信</h1>
     <p>①「配信開始」をクリックしてカメラを起動し、ライブ配信を開始します。</p>
-    <p>② <router-link to="/Live" target="_blank">発表画面（Live）</router-link> に移動し、プロジェクターなどで画面を投影します。</p>
+    <p>②
+      <router-link to="/Live" target="_blank">発表画面（Live）</router-link>
+      に移動し、プロジェクターなどで画面を投影します。
+    </p>
 
     <div class="broadcast-container">
       <div class="video-container">
@@ -91,14 +94,25 @@ export default {
   methods: {
     async startBroadcast() {
       try {
-        this.localStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: 1280,
-            height: 720,
-            facingMode: { exact: "environment" }
-          },
-          audio: true
-        });
+        try {
+          this.localStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: 1280,
+              height: 720,
+              facingMode: {exact: "environment"}
+            },
+            audio: true
+          });
+        } catch (err) {
+          // exact指定が失敗したらフォールバック
+          this.localStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: 1280,
+              height: 720,
+            },
+            audio: true
+          });
+        }
 
         this.$refs.localVideo.srcObject = this.localStream;
         this.cameraStarted = true;
