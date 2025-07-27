@@ -12,26 +12,16 @@
 
     <div class="controls">
       <button
-          @click="startCamera"
-          :disabled="cameraStarted"
-          class="btn btn-primary"
-      >
-        カメラ開始
-      </button>
-
-      <button
           @click="startBroadcast"
-          :disabled="!cameraStarted || broadcasting"
-          class="btn btn-success"
-      >
+          :disabled="broadcasting"
+          class="btn btn-success">
         {{ broadcasting ? "配信中..." : "配信開始" }}
       </button>
 
       <button
           @click="stopBroadcast"
           :disabled="!broadcasting"
-          class="btn btn-danger"
-      >
+          class="btn btn-danger">
         配信停止
       </button>
     </div>
@@ -70,7 +60,7 @@ export default {
       broadcasting: false,
       connectionStatus: "未接続",
       viewerCount: 0,
-      listeners: [], // onValue の解除関数を格納
+      listeners: [],
     };
   },
 
@@ -87,7 +77,7 @@ export default {
   },
 
   methods: {
-    async startCamera() {
+    async startBroadcast() {
       try {
         this.localStream = await navigator.mediaDevices.getUserMedia({
           video: {width: 1280, height: 720},
@@ -101,9 +91,7 @@ export default {
         console.error("カメラアクセスエラー:", error);
         alert("カメラにアクセスできませんでした");
       }
-    },
 
-    async startBroadcast() {
       if (!this.localStream) {
         alert("まずカメラを開始してください");
         return;
@@ -118,7 +106,7 @@ export default {
           this.peerConnection.addTrack(track, this.localStream);
         });
 
-        // ルーム初期化（既存のルームとシグナリングをクリア）
+        // ルーム初期化
         const roomRef = ref(database, `room`);
         await set(roomRef, {
           broadcaster: true,
@@ -141,17 +129,15 @@ export default {
           }
         };
 
-        // 接続状態の監視
         this.peerConnection.onconnectionstatechange = () => {
           this.connectionStatus = this.peerConnection.connectionState;
         };
 
         this.peerConnection.oniceconnectionstatechange = () => {
-          // 必要ならログ出力等
         };
 
         // Answerの監視を開始
-        this.listenForAnswer();
+        this.listenForAnswer().then();
 
         // 視聴者監視開始
         this.listenForViewers();
@@ -179,7 +165,7 @@ export default {
           console.log("Answer受信:", answerData);
 
           try {
-            // Remote descriptionを毎回セット（再交渉を妨げない）
+            // Remote descriptionを毎回セット
             await this.peerConnection.setRemoteDescription(
                 new RTCSessionDescription(answerData)
             );
@@ -190,6 +176,7 @@ export default {
           }
         } else if (answerData && answerData.type === "join-request") {
           console.log("視聴者参加要求受信");
+
           // 新しい視聴者に対応するため、古い Offer/候補をクリアしてから Offer 作成
           try {
             await set(ref(database, `room/offer`), null);
@@ -266,7 +253,7 @@ export default {
     },
 
     async cleanup() {
-      // リスナー解除（保存した解除関数を呼ぶ）
+      // リスナー解除
       this.listeners.forEach((unsub) => {
         try {
           if (typeof unsub === "function") unsub();
@@ -284,7 +271,6 @@ export default {
           this.peerConnection.oniceconnectionstatechange = null;
           this.peerConnection.close();
         } catch (e) {
-          // close() は既に終了済み等で例外になることがあるが実害はないため無視
           console.debug("peerConnection.close() を無視:", e);
         }
         this.peerConnection = null;
@@ -348,15 +334,6 @@ export default {
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: #007bff;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #0056b3;
 }
 
 .btn-success {

@@ -1,24 +1,20 @@
 <template>
   <div id="app">
-    <!-- WebRTC背景映像 -->
     <div ref="backgroundVideo" class="background"></div>
 
-    <!-- 接続状態オーバーレイ -->
     <div v-if="!connected" class="connection-overlay">
       <div class="connection-status-card">
         <div class="loading-spinner"></div>
         <h2>{{ statusMessage }}</h2>
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-        <button v-if="errorMessage" @click="retryConnection" class="retry-btn">
+        <button @click="retryConnection" class="retry-btn">
           再接続
         </button>
       </div>
     </div>
 
-    <!-- Lottieアニメーション -->
     <div id="lottie"></div>
 
-    <!-- 流れるコメント -->
     <div v-for="(comment, index) in this.commentList" :key="index">
       <span
           class="comment-text border-text"
@@ -30,7 +26,6 @@
       />
     </div>
 
-    <!-- コメント履歴 -->
     <div class="comment-history">
       <div
           class="comment-text border-text"
@@ -40,10 +35,8 @@
       ></div>
     </div>
 
-    <!-- タイトル -->
     <div class="title border-text">{{ currentTitle }}</div>
 
-    <!-- 接続状態表示 -->
     <div v-if="connected" class="connection-indicator">
       <span class="status-dot" :class="connectionStatus"></span>
       <span class="status-text">{{ statusText }}</span>
@@ -78,7 +71,8 @@ export default {
       remoteStream: null,
       connectionStatus: "disconnected",
       errorMessage: "",
-      listeners: [], // onValue の解除関数を格納
+      broadcastEnded: false,
+      listeners: [],
       viewerRef: null,
 
       // 受信済み候補の重複防止
@@ -111,6 +105,7 @@ export default {
 
     statusMessage() {
       if (this.errorMessage) return "エラーが発生しました";
+      if (this.broadcastEnded) return "配信が終了しました";
       if (this.connecting) return "配信に接続中...";
       return "配信を探しています...";
     },
@@ -147,59 +142,49 @@ export default {
     },
 
     setupCommentListeners() {
-      // 既存のコメント機能
       let currentId;
-      const currentRef = ref(database, "current");
-      const unsubCurrent = onValue(currentRef, (snapshot) => {
+      onValue(ref(database, "current"), (snapshot) => {
         const current = snapshot.val();
-        if (current) {
-          if (currentId !== undefined && currentId === current.id) {
-            animation.playSegments([4, 60], true);
-          }
-          currentId = current.id;
-          this.currentTitle = current.title;
+        if (currentId !== undefined && currentId === current.id) {
+          animation.playSegments([4, 60], true);
         }
+
+        currentId = current.id;
+        this.currentTitle = current.title;
       });
-      this.listeners.push(unsubCurrent);
 
       let commentCount;
       let isPreviousTop = false;
-      const commentsRef = ref(database, "comments");
-      const unsubComments = onValue(commentsRef, (snapshot) => {
-        const comments = snapshot.val();
-        if (comments) {
-          this.commentHistory = Object.values(comments).reverse();
+      onValue(ref(database, "comments"), (snapshot) => {
+        this.commentHistory = Object.values(snapshot.val());
+        this.commentHistory = this.commentHistory.slice().reverse();
 
-          const newCommentCount = Object.keys(comments).length;
-          if (commentCount !== undefined && commentCount < newCommentCount) {
-            const commentKeys = Object.keys(comments);
-            const latestComment =
-                comments[commentKeys[commentKeys.length - 1]];
+        if (commentCount !== undefined && commentCount < snapshot.size) {
+          let i = 0;
+          snapshot.forEach((e) => {
+            if (i === snapshot.size - 1) {
+              const topMin = 0;
+              const topMax = 24;
+              const bottomMin = 68;
+              const bottomMax = 80;
 
-            const topMin = 0;
-            const topMax = 24;
-            const bottomMin = 68;
-            const bottomMax = 80;
+              let isTop = Math.round(Math.random()) === 0;
+              if (isTop === isPreviousTop) {
+                isTop = Math.round(Math.random()) === 0;
+              }
+              isPreviousTop = isTop;
 
-            let isTop = Math.round(Math.random()) === 0;
-            if (isTop === isPreviousTop) {
-              isTop = Math.round(Math.random()) === 0;
+              const min = isTop ? topMin : bottomMin;
+              const max = isTop ? topMax : bottomMax;
+              const posY = Math.floor(Math.random() * (max + 1 - min)) + min;
+
+              this.commentList.push({message: e.val().message, posY: posY});
             }
-            isPreviousTop = isTop;
-
-            const min = isTop ? topMin : bottomMin;
-            const max = isTop ? topMax : bottomMax;
-            const posY = Math.floor(Math.random() * (max + 1 - min)) + min;
-
-            this.commentList.push({
-              message: latestComment.message,
-              posY: posY,
-            });
-          }
-          commentCount = newCommentCount;
+            i++;
+          });
         }
+        commentCount = snapshot.size;
       });
-      this.listeners.push(unsubComments);
     },
 
     async joinBroadcast() {
@@ -248,12 +233,16 @@ export default {
               clearTimeout(this.reconnectTimer);
               this.reconnectTimer = null;
             }
+            this.listenForBroadcastStop(database);
+            console.log("配信に接続しました");
+
           } else if (this.connectionStatus === "failed") {
             this.errorMessage = "接続に失敗しました";
             this.connecting = false;
             this.scheduleReconnect();
+
           } else if (this.connectionStatus === "disconnected") {
-            // 一時切断のこともあるので少し待ってから再接続
+            // 一時切断の可能性があるため再接続を試みる
             this.scheduleReconnect();
           }
         };
@@ -326,7 +315,7 @@ export default {
           type: "join-request",
           timestamp: Date.now(),
         });
-        console.log("参加要求送信完了");
+        console.log("参加要求を送信");
       } catch (error) {
         console.error("参加要求送信エラー:", error);
       }
@@ -404,6 +393,23 @@ export default {
       this.listeners.push(unsubscribe);
     },
 
+    listenForBroadcastStop(database) {
+      const stopRef = ref(database, `room`);
+
+      const unsubscribe = onValue(stopRef, async (snapshot) => {
+        if (!snapshot.exists()) {
+          console.log("配信停止");
+          this.broadcastEnded = true;
+          this.connectionStatus = "disconnected";
+          this.connected = false;
+          this.connecting = false;
+          await this.cleanup();
+        }
+      });
+
+      this.listeners.push(unsubscribe);
+    },
+
     displayRemoteStream() {
       // 背景として映像を表示
       const backgroundDiv = this.$refs.backgroundVideo;
@@ -446,6 +452,7 @@ export default {
 
     async retryConnection() {
       this.errorMessage = "";
+      this.broadcastEnded = false;
       await this.cleanup();
       await this.joinBroadcast();
     },
@@ -476,13 +483,12 @@ export default {
           this.peerConnection.oniceconnectionstatechange = null;
           this.peerConnection.close();
         } catch (e) {
-          // close() は既に終了済み等で例外になることがあるが実害はないため無視
           console.debug("peerConnection.close() を無視:", e);
         }
         this.peerConnection = null;
       }
 
-      // 視聴者登録解除
+      // 視聴者の登録解除
       if (this.viewerRef) {
         try {
           await remove(this.viewerRef);
@@ -582,7 +588,7 @@ export default {
 
 .error {
   color: #dc3545;
-  margin: 10px 0;
+  margin: 12px 0 0;
   font-size: 14px;
   background: #f8d7da;
   padding: 8px;
@@ -594,7 +600,8 @@ export default {
   background: #007bff;
   border: none;
   color: white;
-  padding: 8px 16px;
+  padding: 8px 24px;
+  margin-top: 12px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
