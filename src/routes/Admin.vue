@@ -1,22 +1,24 @@
 <template>
   <div id="app">
-    <div class="link">
-      <router-link to="/">Home</router-link>
+    <div class="link" v-show="hostname !== 'localhost'">
+      <router-link to="/">ホーム</router-link>
       <span>│</span>
-      <router-link to="/screen">Screen</router-link>
+      <router-link to="/screen">発表画面</router-link>
       <span>│</span>
-      <router-link to="/admin">Admin</router-link>
+      <router-link to="/live" v-if="streamingEnabled">ライブ配信画面</router-link>
+      <span>│</span>
+      <router-link to="/admin">管理者画面</router-link>
     </div>
     <div class="card-list">
       <router-link to="/admin/manage" class="card">
         <span class="fas fa-user-plus"></span>
         <p>発表者の追加・編集</p>
       </router-link>
-      <router-link to="/admin/switch"  class="card">
+      <router-link to="/admin/switch" class="card">
         <span class="fas fa-exchange-alt"></span>
         <p>発表者を切り替える</p>
       </router-link>
-      <router-link to="/admin/comment"  class="card">
+      <router-link to="/admin/comment" class="card">
         <span class="fas fa-comments"></span>
         <p>コメント確認</p>
       </router-link>
@@ -25,7 +27,22 @@
 </template>
 
 <script>
+import {useRemoteConfig} from "@/common/use-remote-config";
+
+const {fetchConfig, getStreaming} = useRemoteConfig()
+
 export default {
+  async created() {
+    this.hostname = document.location.hostname;
+    await fetchConfig()
+    this.streamingEnabled = await getStreaming()
+  },
+  data() {
+    return {
+      hostname: '',
+      streamingEnabled: false,
+    };
+  },
 }
 </script>
 
