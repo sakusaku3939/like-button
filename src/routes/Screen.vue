@@ -48,7 +48,12 @@ export default {
       getDownloadURL(storageRef(storage, "files/" + current.id))
           .then((url) => this.imageURL = url)
           .catch(() => {
-            this.imageURL = ""
+            getDownloadURL(storageRef(storage, "files/default.png"))
+                .then((url) => this.imageURL = url)
+                .catch(() => {
+                      this.imageURL = ""
+                    }
+                );
           });
       currentId = current.id;
       this.currentTitle = current.title;
