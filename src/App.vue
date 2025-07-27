@@ -6,6 +6,10 @@
       <span>│</span>
       <router-link to="/screen">Screen</router-link>
       <span>│</span>
+      <span v-if="streaming">
+        <router-link to="/live">Live</router-link>
+        <span>│</span>
+      </span>
       <router-link to="/admin">Admin</router-link>
     </div>
   </div>
@@ -15,6 +19,7 @@
 import config from "./config/firebase-config.js"
 import sw from "./common/switch-scroll.js"
 import {initializeApp} from 'firebase/app';
+import {useRemoteConfig} from "@/common/use-remote-config";
 
 initializeApp(config);
 
@@ -26,13 +31,18 @@ appHeight();
 
 sw.disableScroll();
 
+const {fetchConfig, getStreaming} = useRemoteConfig()
+
 export default {
-  created() {
+  async created() {
     this.hostname = document.location.hostname;
+    await fetchConfig()
+    this.streaming = await getStreaming()
   },
   data() {
     return {
       hostname: '',
+      streaming: false,
     };
   },
 }

@@ -7,6 +7,7 @@ import Manage from "./routes/admin/Manage.vue";
 import Switch from "./routes/admin/Switch.vue";
 import Comment from "./routes/admin/Comment.vue";
 import Login from "./routes/admin/Login.vue";
+import Live from "@/routes/Live.vue";
 
 const routes = [
     {
@@ -17,6 +18,11 @@ const routes = [
     {
         path: '/screen',
         component: Screen,
+        meta: { requireAuth: false },
+    },
+    {
+        path: '/live',
+        component: Live,
         meta: { requireAuth: false },
     },
     {
