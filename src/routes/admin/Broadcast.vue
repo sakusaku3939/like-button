@@ -21,20 +21,27 @@
       <div class="controls">
         <button
             @click="startBroadcast"
-            :disabled="broadcasting"
+            :disabled="broadcasting || alreadyBroadcasting"
             class="btn btn-success">
           {{ broadcasting ? "配信中..." : "配信開始" }}
         </button>
 
         <button
             @click="stopBroadcast"
-            :disabled="!broadcasting"
+            :disabled="!broadcasting || alreadyBroadcasting"
             class="btn btn-danger">
           配信停止
         </button>
       </div>
 
-      <div v-if="broadcasting" class="broadcast-info">
+      <div v-if="alreadyBroadcasting" class="broadcast-info">
+        <div class="status-card">
+          <h3>🚫 配信中のため操作できません</h3>
+          <p>この端末では新しい配信を開始できません。</p>
+        </div>
+      </div>
+
+      <div v-if="broadcasting && !alreadyBroadcasting" class="broadcast-info">
         <div class="status-card">
           <h3>📺 配信中</h3>
           <p>状態: {{ connectionStatus }}</p>
@@ -54,7 +61,7 @@ import {
   push,
   onValue,
   remove,
-  getDatabase,
+  getDatabase, get,
 } from "firebase/database";
 import sw from "@/common/switch-scroll";
 
@@ -68,14 +75,23 @@ export default {
       peerConnections: {}, // viewerId -> RTCPeerConnection
       cameraStarted: false,
       broadcasting: false,
+      alreadyBroadcasting: false,
       connectionStatus: "未接続",
       viewerCount: 0,
       listeners: [],
     };
   },
 
-  created() {
+  async created() {
     sw.enableScroll();
+
+    // 既に配信中の場合は無効化する
+    const roomRef = ref(database, `room`);
+    const roomSnapshot = await get(roomRef);
+    if (roomSnapshot.exists()) {
+      this.alreadyBroadcasting = true;
+      alert("既に配信中のルームが存在します。新しい配信は開始できません。");
+    }
   },
   async mounted() {
     // ページ離脱時の処理
@@ -93,6 +109,11 @@ export default {
 
   methods: {
     async startBroadcast() {
+      if (this.alreadyBroadcasting) {
+        alert("既に別端末で配信中です。この端末では開始できません。");
+        return;
+      }
+
       try {
         try {
           this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -290,6 +311,9 @@ export default {
     },
 
     async stopBroadcast() {
+      if (this.alreadyBroadcasting) {
+        return;
+      }
       try {
         await this.cleanup();
 
@@ -305,6 +329,9 @@ export default {
     },
 
     async cleanup() {
+      if (this.alreadyBroadcasting) {
+        return;
+      }
       // リスナー解除
       this.listeners.forEach((unsub) => {
         try {
