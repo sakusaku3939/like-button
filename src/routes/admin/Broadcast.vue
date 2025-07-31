@@ -1,6 +1,20 @@
 <template>
   <div id="app">
     <h1>ライブ配信</h1>
+
+    <div v-if="alreadyBroadcasting" class="broadcast-info">
+      <div class="status-card">
+        <h3>🚫 配信中のため操作できません</h3>
+        <p>この端末では新しい配信を開始できません。</p>
+
+        <button
+            @click="stopBroadcast"
+            class="btn btn-danger">
+          全ての配信を停止
+        </button>
+      </div>
+    </div>
+
     <p>①「配信開始」をクリックしてカメラを起動し、ライブ配信を開始します。</p>
     <p>②
       <router-link to="/Live" target="_blank">発表画面（Live）</router-link>
@@ -32,13 +46,6 @@
             class="btn btn-danger">
           配信停止
         </button>
-      </div>
-
-      <div v-if="alreadyBroadcasting" class="broadcast-info">
-        <div class="status-card">
-          <h3>🚫 配信中のため操作できません</h3>
-          <p>この端末では新しい配信を開始できません。</p>
-        </div>
       </div>
 
       <div v-if="broadcasting && !alreadyBroadcasting" class="broadcast-info">
@@ -311,9 +318,6 @@ export default {
     },
 
     async stopBroadcast() {
-      if (this.alreadyBroadcasting) {
-        return;
-      }
       try {
         await this.cleanup();
 
@@ -465,7 +469,7 @@ p {
 }
 
 .status-card p {
-  margin: 5px 0;
+  margin: 5px 0 16px;
   color: #6c757d;
 }
 
