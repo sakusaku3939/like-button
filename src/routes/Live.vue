@@ -228,6 +228,8 @@ export default {
           return
         }
 
+        this.listenForBroadcastStop(database);
+
         // 視聴者として登録（先に viewerId を確定）
         const viewerId = this.generateViewerId();
         this.viewerId = viewerId;
@@ -263,7 +265,6 @@ export default {
               clearTimeout(this.reconnectTimer);
               this.reconnectTimer = null;
             }
-            this.listenForBroadcastStop(database);
             console.log("配信に接続しました");
 
           } else if (this.connectionStatus === "failed") {
@@ -417,6 +418,7 @@ export default {
       const unsubscribe = onValue(stopRef, async (snapshot) => {
         if (!snapshot.exists()) {
           console.log("配信停止");
+          this.broadcastEnded = true;
           await this.cleanup();
         }
       });
