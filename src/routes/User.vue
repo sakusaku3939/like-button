@@ -30,6 +30,7 @@ import lottie from "lottie-web";
 import {getDatabase, ref, push, update, increment, serverTimestamp, onValue, get, child} from "firebase/database";
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
+import sw from "../common/switch-scroll.js"
 
 const userId = useStorage('managedKey', Math.random().toString(32).substring(2));
 
@@ -40,6 +41,8 @@ const $cookies = inject('$cookies');
 
 let animation;
 const db = getDatabase();
+
+sw.enableScroll();
 
 document.documentElement.style.setProperty('--fixed-center', window.innerHeight / 2 + 'px');
 
@@ -142,6 +145,7 @@ export default {
   top: var(--fixed-center);
   left: 50%;
   transform: translateY(-50%) translateX(-50%);
+  padding: 32px 0;
 }
 
 .title {
@@ -185,11 +189,12 @@ export default {
 }
 
 .bottom {
+  position: fixed;
+  bottom: 0;
   display: flex;
   justify-content: center;
   align-items: flex-end;
   width: 100%;
-  height: calc(var(--vh) * 100);
 }
 
 .comment {
