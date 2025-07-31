@@ -217,11 +217,15 @@ export default {
 
         if (!roomSnapshot.exists()) {
           console.error("配信ルームが存在しません");
+          await this.cleanup();
+          return
         }
 
         const roomData = roomSnapshot.val();
         if (!roomData || !roomData.broadcaster) {
           console.error("配信者情報が見つかりません");
+          await this.cleanup();
+          return
         }
 
         // 視聴者として登録（先に viewerId を確定）
@@ -413,10 +417,6 @@ export default {
       const unsubscribe = onValue(stopRef, async (snapshot) => {
         if (!snapshot.exists()) {
           console.log("配信停止");
-          this.broadcastEnded = true;
-          this.connectionStatus = "disconnected";
-          this.connected = false;
-          this.connecting = false;
           await this.cleanup();
         }
       });
