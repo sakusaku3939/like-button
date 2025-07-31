@@ -319,12 +319,13 @@ export default {
 
     async stopBroadcast() {
       try {
-        await this.cleanup();
+        await this.cleanup(true);
 
         // UI状態リセット
         this.broadcasting = false;
         this.connectionStatus = "未接続";
         this.viewerCount = 0;
+        this.alreadyBroadcasting = false;
 
         console.log("配信停止完了");
       } catch (error) {
@@ -332,8 +333,8 @@ export default {
       }
     },
 
-    async cleanup() {
-      if (this.alreadyBroadcasting) {
+    async cleanup(force = false) {
+      if (this.alreadyBroadcasting && !force) {
         return;
       }
       // リスナー解除
