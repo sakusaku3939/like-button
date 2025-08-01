@@ -234,7 +234,7 @@ export default {
         const viewerId = this.generateViewerId();
         this.viewerId = viewerId;
         this.viewerRef = ref(database, `room/viewers/${viewerId}`);
-        await set(this.viewerRef, {
+        await this.safeWrite(this.viewerRef, {
           joinedAt: Date.now(),
           userAgent: navigator.userAgent,
         });
@@ -325,8 +325,8 @@ export default {
     async clearViewerSignaling() {
       try {
         if (!this.viewerId) return;
-        await set(ref(database, `room/signaling/${this.viewerId}/answerCandidates`), null);
-        await set(ref(database, `room/signaling/${this.viewerId}/answer`), null);
+        await this.safeWrite(ref(database, `room/signaling/${this.viewerId}/answerCandidates`), null);
+        await this.safeWrite(ref(database, `room/signaling/${this.viewerId}/answer`), null);
       } catch (e) {
         console.warn("シグナリング初期化失敗（視聴者）:", e);
       }
@@ -336,7 +336,7 @@ export default {
       try {
         if (!this.viewerId) return;
         const reqRef = ref(database, `room/requests/${this.viewerId}`);
-        await set(reqRef, {
+        await this.safeWrite(reqRef, {
           type: "join-request",
           viewerId: this.viewerId,
           timestamp: Date.now(),
@@ -369,7 +369,7 @@ export default {
 
             // AnswerをRealtime Databaseに保存（viewerId 固有）
             const answerRef = ref(database, `room/signaling/${this.viewerId}/answer`);
-            await set(answerRef, {
+            await this.safeWrite(answerRef, {
               type: answer.type,
               sdp: answer.sdp,
               timestamp: Date.now(),
@@ -471,6 +471,15 @@ export default {
       this.broadcastEnded = false;
       await this.cleanup();
       await this.joinBroadcast();
+    },
+
+    async safeWrite(path, data) {
+      const roomSnapshot = await get(ref(database, "room"));
+      if (!roomSnapshot.exists()) {
+        console.warn("ルームが存在しないため書き込みを中止");
+        return;
+      }
+      await set(ref(database, path), data);
     },
 
     async cleanup() {
