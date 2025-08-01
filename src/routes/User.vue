@@ -27,7 +27,7 @@
 import {inject} from 'vue'
 import {useStorage} from '@vueuse/core'
 import lottie from "lottie-web";
-import {getDatabase, ref, push, update, increment, serverTimestamp, onValue, get, child} from "firebase/database";
+import {get, getDatabase, increment, push, ref, serverTimestamp, update} from "firebase/database";
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
 import sw from "../common/switch-scroll"
@@ -59,6 +59,17 @@ export default {
       autoplay: false,
       path: 'https://lottie.host/58003668-f02d-4728-9f4c-2a3f6dd45dc3/GiyNO5oXgO.json'
     });
+
+    function registerPushUpEvent() {
+      const button = document.querySelector(".bottom");
+
+      visualViewport.addEventListener("resize", ({target}) => {
+        const keyboardHeight = window.innerHeight - target.height;
+        button.style.bottom = keyboardHeight === 0 ? "" : `${keyboardHeight}px`;
+      });
+    }
+
+    registerPushUpEvent();
   },
   methods: {
     clickLikeButton() {
@@ -197,9 +208,6 @@ html, body {
 .bottom {
   position: fixed;
   bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
   width: 100%;
 }
 
