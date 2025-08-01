@@ -30,7 +30,6 @@ import lottie from "lottie-web";
 import {get, getDatabase, increment, push, ref, serverTimestamp, update} from "firebase/database";
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
-import sw from "../common/switch-scroll"
 
 const userId = useStorage('managedKey', Math.random().toString(32).substring(2));
 
@@ -41,8 +40,6 @@ const $cookies = inject('$cookies');
 
 let animation;
 const db = getDatabase();
-
-sw.enableScroll();
 
 export default {
   data() {
@@ -60,18 +57,21 @@ export default {
       path: 'https://lottie.host/58003668-f02d-4728-9f4c-2a3f6dd45dc3/GiyNO5oXgO.json'
     });
 
-    function registerPushUpEvent() {
-      const button = document.querySelector(".bottom");
-
-      visualViewport.addEventListener("resize", ({target}) => {
-        const keyboardHeight = window.innerHeight - target.height;
-        button.style.bottom = keyboardHeight === 0 ? "" : `${keyboardHeight}px`;
-      });
-    }
-
-    registerPushUpEvent();
+    this.registerPushUpEvent();
   },
   methods: {
+    registerPushUpEvent() {
+      const bottom = document.querySelector(".bottom");
+
+      function adjustBottom(event) {
+        const scrollY = visualViewport.pageTop;
+        const keyboardHeight = window.innerHeight - event.target.height + scrollY;
+        bottom.style.bottom = keyboardHeight === 0 ? "" : `${keyboardHeight}px`;
+      }
+
+      visualViewport.addEventListener("resize", adjustBottom);
+      window.addEventListener("touchmove", adjustBottom);
+    },
     clickLikeButton() {
       if (this.$cookies.isKey("rateLimit") === true) return;
 
