@@ -36,7 +36,7 @@
 <script>
 import sw from "../../common/switch-scroll.js"
 import presenter from "../../common/presenter-list.js"
-import {getDatabase, ref, set, get, child, onValue} from "firebase/database";
+import {getDatabase, ref, set, get, child, onValue, update} from "firebase/database";
 import {useLoading} from "vue-loading-overlay";
 
 const db = getDatabase();
@@ -107,9 +107,11 @@ export default {
       const presenter = this.findById(this.presenterList, this.changeId);
       this.current.id = presenter.id;
       this.current.likeCount = this.findById(this.likeCountList, this.changeId).likeCount;
-      await set(ref(db, "current"), {
+      await update(ref(db, "current"), {
         id: this.current.id,
         title: presenter.title,
+      });
+      await update(ref(db, "current"), {
         count: this.current.likeCount,
       });
 
