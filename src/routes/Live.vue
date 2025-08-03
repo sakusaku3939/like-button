@@ -221,13 +221,6 @@ export default {
           return
         }
 
-        const roomData = roomSnapshot.val();
-        if (!roomData || !roomData.broadcaster) {
-          console.error("配信者情報が見つかりません");
-          await this.cleanup();
-          return
-        }
-
         this.listenForBroadcastStop(database);
 
         // 視聴者として登録（先に viewerId を確定）
@@ -473,13 +466,13 @@ export default {
       await this.joinBroadcast();
     },
 
-    async safeWrite(path, data) {
+    async safeWrite(writeRef, data) {
       const roomSnapshot = await get(ref(database, "room"));
       if (!roomSnapshot.exists()) {
         console.warn("ルームが存在しないため書き込みを中止");
         return;
       }
-      await set(ref(database, path), data);
+      return await set(writeRef, data);
     },
 
     async cleanup() {
