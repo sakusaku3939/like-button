@@ -27,7 +27,7 @@
 import {inject} from 'vue'
 import {useStorage} from '@vueuse/core'
 import lottie from "lottie-web";
-import {get, getDatabase, increment, push, ref, serverTimestamp, update} from "firebase/database";
+import {getDatabase, ref, push, runTransaction, serverTimestamp, get} from "firebase/database";
 import swal from 'sweetalert';
 import ngWord from "../config/ng-word.js"
 
@@ -76,7 +76,9 @@ export default {
       if (this.$cookies.isKey("rateLimit") === true) return;
 
       animation.playSegments([4, 60], true);
-      update(ref(db, "current"), {count: increment(1)});
+      runTransaction(ref(db, "current/count"), (current) => {
+        return (current || 0) + 1;
+      });
 
       updateCount++;
       if (updateCount >= rateLimit) {
