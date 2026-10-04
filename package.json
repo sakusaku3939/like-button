@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "test:dependencies": "node --test tests/dependency-compatibility.test.js"
   },
   "dependencies": {
     "@vueuse/core": "^12.5.0",
@@ -55,5 +56,16 @@
     "> 1%",
     "last 2 versions",
     "not dead"
-  ]
+  ],
+  "overrides": {
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "1.13.6"
+    },
+    "webpack-dev-server": {
+      "webpack-dev-middleware": "7.4.6"
+    }
+  },
+  "engines": {
+    "node": ">=18.12.0"
+  }
 }
