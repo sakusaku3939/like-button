@@ -156,3 +156,85 @@ test('webpack-dev-server 4 serves and rebuilds with patched middleware', { timeo
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('SockJS is the only UUID consumer and resolves the native v4 adapter', () => {
+  const lockfile = require('../package-lock.json');
+  const consumers = Object.entries(lockfile.packages)
+    .filter(([, pkg]) => pkg.dependencies && pkg.dependencies.uuid)
+    .map(([location, pkg]) => ({ location, version: pkg.version }));
+  assert.deepEqual(consumers, [{ location: 'node_modules/sockjs', version: '0.3.24' }]);
+
+  // Reject a reintroduced registry UUID package, including a nested copy.
+  const uuidPackages = Object.entries(lockfile.packages)
+    .filter(([location]) => location.endsWith('/node_modules/uuid') || location === 'node_modules/uuid');
+  assert.deepEqual(uuidPackages, [['node_modules/uuid', {
+    resolved: 'vendor/sockjs-uuid',
+    link: true,
+  }]]);
+
+  const sockjsRequire = createRequire(require.resolve('sockjs'));
+  assert.equal(sockjsRequire('uuid/package.json').name, '@like-button/sockjs-uuid');
+  const uuid = sockjsRequire('uuid');
+  assert.deepEqual(Object.keys(uuid), ['v4']);
+  assert.throws(() => uuid.v4({}), TypeError);
+  const ids = new Set(Array.from({ length: 100 }, () => uuid.v4()));
+  assert.equal(ids.size, 100);
+  for (const id of ids) {
+    assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  }
+});
+
+test('SockJS creates native UUIDs and exchanges messages after reconnecting', { timeout: 15000 }, async () => {
+  const sockjs = require('sockjs');
+  const WebSocket = require('ws');
+  const ids = [];
+  const sockets = new Set();
+  const server = http.createServer();
+  const transport = sockjs.createServer({ log() {}, disconnect_delay: 10 });
+  transport.on('connection', connection => {
+    ids.push(connection.id);
+    connection.on('data', message => connection.write(`echo:${message}`));
+  });
+  transport.installHandlers(server, { prefix: '/sockjs' });
+
+  try {
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const port = server.address().port;
+    const connect = session => new Promise((resolve, reject) => {
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/sockjs/000/${session}/websocket`);
+      sockets.add(socket);
+      let received = false;
+      socket.on('error', reject);
+      socket.on('message', frame => {
+        try {
+          const message = frame.toString();
+          if (message === 'o') socket.send(JSON.stringify([session]));
+          else if (message.startsWith('a')) {
+            assert.deepEqual(JSON.parse(message.slice(1)), [`echo:${session}`]);
+            received = true;
+            socket.close();
+          }
+        } catch (error) {
+          reject(error);
+          socket.terminate();
+        }
+      });
+      socket.on('close', () => {
+        sockets.delete(socket);
+        if (received) resolve();
+        else reject(new Error('SockJS closed before exchanging a message'));
+      });
+    });
+
+    await connect('first-session');
+    await connect('reconnected-session');
+    assert.equal(ids.length, 2);
+    assert.notEqual(ids[0], ids[1]);
+    for (const id of ids) {
+      assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    }
+  } finally {
+    for (const socket of sockets) socket.terminate();
+    await new Promise(resolve => server.close(resolve));
+  }
+});

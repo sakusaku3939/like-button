@@ -30,7 +30,8 @@
     "eslint": "^8.50.0",
     "eslint-plugin-vue": "^9.32.0",
     "eslint-webpack-plugin": "^4.0.2",
-    "sweetalert": "^2.1.2"
+    "sweetalert": "^2.1.2",
+    "uuid": "file:vendor/sockjs-uuid"
   },
   "eslintConfig": {
     "root": true,
@@ -63,6 +64,9 @@
     },
     "webpack-dev-server": {
       "webpack-dev-middleware": "7.4.6"
+    },
+    "sockjs@0.3.24": {
+      "uuid": "$uuid"
     }
   },
   "engines": {
