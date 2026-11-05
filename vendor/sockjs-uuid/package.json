@@ -1,0 +1,10 @@
+{
+  "name": "@like-button/sockjs-uuid",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SockJS-only UUID v4 adapter using Node.js crypto.randomUUID",
+  "main": "index.cjs",
+  "engines": {
+    "node": ">=18.12.0"
+  }
+}
